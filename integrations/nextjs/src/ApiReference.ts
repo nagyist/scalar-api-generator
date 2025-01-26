@@ -1,5 +1,4 @@
 import type { ReferenceConfiguration } from '@scalar/types/legacy'
-import type { defaultConfig } from 'next/dist/server/config-shared'
 
 import { nextjsThemeCss } from './theme'
 
