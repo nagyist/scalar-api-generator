@@ -29,8 +29,8 @@
     "test": "vitest",
     "test:unit": "vitest .",
     "typegen:migration": "vite-node ./src/migrations/generate-types.ts",
-    "types:build": "scalar-types-build",
-    "types:check": "scalar-types-check"
+    "types:build": "tsc -p tsconfig.build.json",
+    "types:check": "tsc --noEmit"
   },
   "type": "module",
   "main": "dist/index.js",

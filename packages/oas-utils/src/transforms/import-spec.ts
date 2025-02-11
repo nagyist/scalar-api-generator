@@ -110,16 +110,18 @@ export const getSelectedSecuritySchemeUids = (
     })
 
   // Set the first security requirement if no preferred security schemes are set
-  if (!preferredSecurityNames.length && securityRequirements.length) {
+  if (!preferredSecurityNames.length && securityRequirements[0]) {
     preferredSecurityNames.push(securityRequirements[0])
   }
 
   // Map names to uids
-  const uids = preferredSecurityNames.map((name) =>
-    Array.isArray(name)
-      ? name.map((k) => securitySchemeMap[k])
-      : securitySchemeMap[name],
-  )
+  const uids = preferredSecurityNames
+    .map((name) =>
+      Array.isArray(name)
+        ? name.map((k) => securitySchemeMap[k]).filter(isDefined)
+        : securitySchemeMap[name],
+    )
+    .filter(isDefined)
 
   return uids
 }
@@ -373,9 +375,9 @@ export async function importSpecToWorkspace(
           (s: OpenAPIV3_1.SecurityRequirementObject) => {
             const keys = Object.keys(s)
 
-            // Handle the case of {} for optional
-            if (keys.length) {
-              const [key] = Object.keys(s)
+            // Handle the case of {} for optional security requirements
+            if (keys[0]) {
+              const [key] = keys
               return {
                 [key]: s[key],
               }
@@ -417,11 +419,14 @@ export async function importSpecToWorkspace(
   tags.forEach((t) => {
     t['x-scalar-children']?.forEach((c) => {
       // Add the uid to the appropriate parent.children
-      const nestedUid = tagMap[c.tagName].uid
-      t.children.push(nestedUid)
+      const nestedUid = tagMap[c.tagName]?.uid
 
-      // Remove the nested uid from the root folder
-      collectionChildren.delete(nestedUid)
+      if (nestedUid) {
+        t.children.push(nestedUid)
+
+        // Remove the nested uid from the root folder
+        collectionChildren.delete(nestedUid)
+      }
     })
   })
 
@@ -429,7 +434,7 @@ export async function importSpecToWorkspace(
   requests.forEach((r) => {
     if (r.tags?.length) {
       r.tags.forEach((t) => {
-        tagMap[t].children.push(r.uid)
+        tagMap[t]?.children.push(r.uid)
       })
     } else {
       collectionChildren.add(r.uid)
@@ -514,7 +519,7 @@ export async function importSpecToWorkspace(
  */
 export function getServersFromOpenApiDocument(
   servers: OpenAPIV3_1.ServerObject[] | undefined,
-  { baseServerURL }: Pick<ReferenceConfiguration, 'baseServerURL'> = {},
+  { baseServerURL }: { baseServerURL?: string | undefined } = {},
 ): Server[] {
   if (!servers || !Array.isArray(servers)) return []
 
