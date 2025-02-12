@@ -37,6 +37,10 @@ export function exportSpecFromWorkspace({
   > = {
     ...parsedCollection,
     openapi: parsedCollection.openapi as '3.1.0',
+    info: {
+      title: parsedCollection.info?.title ?? 'API Documentation',
+      version: parsedCollection.info?.version ?? '1.0.0',
+    },
     tags: [],
     paths: {},
     webhooks: {},
@@ -84,6 +88,7 @@ export function exportSpecFromWorkspace({
       oasRequest['x-scalar-examples'] = {}
       request.examples.forEach((uid) => {
         const requestExample = requestExamples[uid]
+        if (!requestExample) return
         oasRequest['x-scalar-examples']![checkName(requestExample.name)] =
           convertExampleToXScalar(requestExample)
       })
@@ -97,8 +102,8 @@ export function exportSpecFromWorkspace({
   /** Add all of the security schemes into the collection */
   Object.values(securitySchemes).forEach((securityScheme) => {
     const oasScheme = oasSecuritySchemeSchema.parse(securityScheme)
-
-    spec.components.securitySchemes![securityScheme.nameKey] = oasScheme
+    if (oasScheme && spec.components.securitySchemes?.[securityScheme.nameKey])
+      spec.components.securitySchemes[securityScheme.nameKey] = oasScheme
   })
 
   return spec
