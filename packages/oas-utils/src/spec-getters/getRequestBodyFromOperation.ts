@@ -45,7 +45,7 @@ const mimeTypes = [
 export function getRequestBodyFromOperation(
   operation: Omit<TransformedOperation, 'httpVerb'>,
   selectedExampleKey?: string | number,
-  omitEmptyAndOptionalProperties?: boolean,
+  omitEmptyAndOptionalProperties: boolean = false,
 ): {
   mimeType: (typeof mimeTypes)[number]
   text?: string
@@ -75,7 +75,7 @@ export function getRequestBodyFromOperation(
 
   // Let’s use the first example
   const selectedExample = (examples ?? {})?.[
-    selectedExampleKey ?? Object.keys(examples ?? {})[0]
+    selectedExampleKey ?? Object.keys(examples ?? {})[0] ?? ''
   ]
 
   if (selectedExample) {
@@ -95,7 +95,7 @@ export function getRequestBodyFromOperation(
    */
   const bodyParameters = getParametersFromOperation(operation, 'body', false)
 
-  if (bodyParameters.length > 0) {
+  if (bodyParameters[0]) {
     return {
       mimeType: 'application/json',
       text: prettyPrintJson(bodyParameters[0].value),
@@ -162,7 +162,7 @@ export function getRequestBodyFromOperation(
     const exampleFromSchema = requestBodyObject?.schema
       ? getExampleFromSchema(requestBodyObject?.schema, {
           mode: 'write',
-          omitEmptyAndOptionalProperties: omitEmptyAndOptionalProperties,
+          omitEmptyAndOptionalProperties,
         })
       : null
 

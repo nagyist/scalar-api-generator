@@ -1,5 +1,5 @@
 import { nanoidSchema } from '@/entities/shared'
-import { schemaModel } from '@/helpers'
+import { schemaModel } from '@/helpers/schema-model'
 import {
   getRequestBodyFromOperation,
   getServerVariableExamples,
