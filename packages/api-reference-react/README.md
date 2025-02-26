@@ -13,32 +13,17 @@ npm install @scalar/api-reference-react
 
 ## Compatibility
 
-This package is compatible with React 19 and now also includes a dedicated build for React 18. You can use either version based on your project requirements.
-
-### React 19 (Default)
-The default import is compatible with React 19:
-
-```ts
-import { ApiReferenceReact } from '@scalar/api-reference-react'
-```
-
-### React 18
-For React 18 compatibility, use the dedicated build:
-
-```ts
-import { ApiReferenceReact } from '@scalar/api-reference-react/react18'
-```
+This package is compatible with React 19 and is untested on React 18. If you want guaranteed React 18 support please use
+version `0.3.166` of this package.
 
 ## Usage
 
-The API Reference package is written in Vue. That shouldn't stop you from using it in React, though. We have created a client side wrapper in React:
+The API Reference package is written in Vue. That shouldn’t stop you from using it in React, though. We have created a client side wrapper in React:
 
 > [!WARNING]\
 > This is untested on SSR/SSG!
 
-### React 19 Example
-
-```tsx
+```ts
 import { ApiReferenceReact } from '@scalar/api-reference-react'
 import '@scalar/api-reference-react/style.css'
 
@@ -56,29 +41,6 @@ function App() {
 
 export default App
 ```
-
-### React 18 Example
-
-```tsx
-import { ApiReferenceReact } from '@scalar/api-reference-react/react18'
-import '@scalar/api-reference-react/style.css'
-
-function App() {
-  return (
-    <ApiReferenceReact
-      configuration={{
-        spec: {
-          url: 'https://cdn.jsdelivr.net/npm/@scalar/galaxy/dist/latest.yaml',
-        },
-      }}
-    />
-  )
-}
-
-export default App
-```
-
-The API and functionality are identical between both versions - only the React dependency version differs.
 
 We wrote a [detailed integration guide for React](https://github.com/scalar/scalar/tree/main/documentation/integrations/react.md), too.
 
@@ -97,7 +59,7 @@ You can find the full configuration options under
 
 ## Community
 
-We are API nerds. You too? Let's chat on Discord: <https://discord.gg/scalar>
+We are API nerds. You too? Let’s chat on Discord: <https://discord.gg/scalar>
 
 ## License
 
