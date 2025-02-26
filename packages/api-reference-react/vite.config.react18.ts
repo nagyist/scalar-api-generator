@@ -8,6 +8,7 @@ import pkg from './package.json'
 export default defineConfig({
   plugins: [react(), dts({ insertTypesEntry: true, rollupTypes: true })],
   build: {
+    outDir: 'dist/react18',
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: './src/index.ts',
@@ -31,6 +32,12 @@ export default defineConfig({
           'react-dom': 'react-dom',
         },
       },
+    },
+  },
+  resolve: {
+    alias: {
+      'react': 'react18',
+      'react-dom': 'react-dom18',
     },
   },
 })

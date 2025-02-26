@@ -13,31 +13,70 @@ npm install @scalar/api-client-react
 
 ## Compatibility
 
-This package is compatible with React 19 and is untested on React 18. If you want guaranteed React 18 support please use
-version `1.0.107` of this package.
+This package is compatible with React 19 and now also includes a dedicated build for React 18. You can use either version based on your project requirements.
+
+### React 19 (Default)
+The default import is compatible with React 19:
+
+```ts
+import { ApiClientModalProvider, useApiClientModal } from '@scalar/api-client-react'
+```
+
+### React 18
+For React 18 compatibility, use the dedicated build:
+
+```ts
+import { ApiClientModalProvider, useApiClientModal } from '@scalar/api-client-react/react18'
+```
 
 ## Usage
 
 First we need to add the provider, you should add it in the highest place you have a unique spec.
 
+### React 19 Example
+
 ```tsx
 import { ApiClientModalProvider } from '@scalar/api-client-react'
-
 import '@scalar/api-client-react/style.css'
-;<ApiClientModalProvider
-  configuration={{
-    spec: {
-      url: 'https://cdn.jsdelivr.net/npm/@scalar/galaxy/dist/latest.json',
-    },
-  }}>
-  {children}
-</ApiClientModalProvider>
+
+function App() {
+  return (
+    <ApiClientModalProvider
+      configuration={{
+        spec: {
+          url: 'https://cdn.jsdelivr.net/npm/@scalar/galaxy/dist/latest.json',
+        },
+      }}>
+      {children}
+    </ApiClientModalProvider>
+  )
+}
+```
+
+### React 18 Example
+
+```tsx
+import { ApiClientModalProvider } from '@scalar/api-client-react/react18'
+import '@scalar/api-client-react/style.css'
+
+function App() {
+  return (
+    <ApiClientModalProvider
+      configuration={{
+        spec: {
+          url: 'https://cdn.jsdelivr.net/npm/@scalar/galaxy/dist/latest.json',
+        },
+      }}>
+      {children}
+    </ApiClientModalProvider>
+  )
+}
 ```
 
 Then you can trigger it from anywhere inside of that provider by calling the `useApiClientModal()`
 
 ```tsx
-import { useApiClientModal } from '@scalar/api-client-react'
+import { useApiClientModal } from '@scalar/api-client-react' // or '@scalar/api-client-react/react18' for React 18
 
 const client = useApiClientModal()
 
@@ -48,11 +87,13 @@ return (
 )
 ```
 
+The API and functionality are identical between both versions - only the React dependency version differs.
+
 Check out the playground for a working example.
 
 ## Community
 
-We are API nerds. You too? Let’s chat on Discord: <https://discord.gg/scalar>
+We are API nerds. You too? Let's chat on Discord: <https://discord.gg/scalar>
 
 ## License
 
