@@ -18,6 +18,7 @@ import { useLayout } from '@/hooks'
 import { matchesDomain } from '@/libs/send-request/set-request-cookies'
 import { useWorkspace } from '@/store'
 import type { EnvVariable } from '@/store/active-entities'
+import PostResponseScripts from '@/views/Request/RequestSection/PostResponseScripts.vue'
 import RequestBody from '@/views/Request/RequestSection/RequestBody.vue'
 import RequestParams from '@/views/Request/RequestSection/RequestParams.vue'
 import RequestPathParams from '@/views/Request/RequestSection/RequestPathParams.vue'
@@ -271,7 +272,6 @@ const handleRequestNamePlaceholder = () => {
       <!-- Spacer -->
       <div class="-my-0.25 flex flex-grow" />
 
-      <!-- Code Snippet -->
       <ScalarErrorBoundary>
         <RequestCodeExample
           class="request-section-content-code-example"
@@ -280,6 +280,9 @@ const handleRequestNamePlaceholder = () => {
           :operation="operation"
           :server="server"
           :workspace="workspace" />
+      </ScalarErrorBoundary>
+      <ScalarErrorBoundary>
+        <PostResponseScripts :operation="operation" />
       </ScalarErrorBoundary>
     </div>
   </ViewLayoutSection>
