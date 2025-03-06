@@ -44,7 +44,7 @@ export const createRequestOperation = ({
   selectedSecuritySchemeUids = [],
   server,
   status,
-  onTestResultUpdate,
+  onTestResultsUpdate,
 }: {
   environment: object | undefined
   example: RequestExample
@@ -55,7 +55,7 @@ export const createRequestOperation = ({
   selectedSecuritySchemeUids?: Operation['selectedSecuritySchemeUids']
   server?: Server | undefined
   status?: EventBus<RequestStatus>
-  onTestResultUpdate?: (result: TestResult) => void
+  onTestResultsUpdate?: (results: TestResult[]) => void
 }): ErrorResponse<{
   controller: AbortController
   sendRequest: () => SendRequestResponse
@@ -193,7 +193,7 @@ export const createRequestOperation = ({
 
         await executePostResponseScript(request['x-post-response'], {
           response,
-          onTestResultUpdate,
+          onTestResultsUpdate,
         })
 
         // Safely check for cookie headers

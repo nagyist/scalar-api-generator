@@ -4,22 +4,24 @@ import { computed, ref, useId } from 'vue'
 
 import SectionFilter from '@/components/SectionFilter.vue'
 import ViewLayoutSection from '@/components/ViewLayout/ViewLayoutSection.vue'
+import type { TestResult } from '@/libs/execute-scripts'
 import type { SendRequestResult } from '@/libs/send-request/create-request-operation'
+import ResponseBody from '@/views/Request/ResponseSection/ResponseBody.vue'
+import ResponseEmpty from '@/views/Request/ResponseSection/ResponseEmpty.vue'
+import ResponseLoadingOverlay from '@/views/Request/ResponseSection/ResponseLoadingOverlay.vue'
+import ResponseMetaInformation from '@/views/Request/ResponseSection/ResponseMetaInformation.vue'
 import TestResults from '@/views/Request/ResponseSection/TestResults.vue'
 
 import RequestHeaders from './RequestHeaders.vue'
-import ResponseBody from './ResponseBody.vue'
 import ResponseBodyVirtual from './ResponseBodyVirtual.vue'
 import ResponseCookies from './ResponseCookies.vue'
-import ResponseEmpty from './ResponseEmpty.vue'
 import ResponseHeaders from './ResponseHeaders.vue'
-import ResponseLoadingOverlay from './ResponseLoadingOverlay.vue'
-import ResponseMetaInformation from './ResponseMetaInformation.vue'
 
 const { numWorkspaceRequests, response, requestResult } = defineProps<{
   numWorkspaceRequests: number
   response: ResponseInstance | undefined
   requestResult: SendRequestResult | null | undefined
+  testResults?: TestResult[] | undefined
 }>()
 
 // Headers
@@ -184,7 +186,7 @@ const requestHeaders = computed(
           :headers="responseHeaders"
           :role="activeFilter === 'All' ? 'none' : 'tabpanel'" />
 
-        <TestResults />
+        <TestResults :testResults="testResults" />
 
         <template v-if="activeFilter === 'All' || activeFilter === 'Body'">
           <!-- Virtualized Text for massive responses -->
