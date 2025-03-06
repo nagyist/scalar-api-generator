@@ -17,7 +17,7 @@ import type {
 } from '@scalar/oas-utils/entities/spec'
 import { isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
 
-import { executePostResponseScript } from '@/libs/execute-scripts'
+import { type TestResult, executePostResponseScript } from '@/libs/execute-scripts'
 import { buildRequestSecurity } from './build-request-security'
 
 export type RequestStatus = 'start' | 'stop' | 'abort'
@@ -44,6 +44,7 @@ export const createRequestOperation = ({
   selectedSecuritySchemeUids = [],
   server,
   status,
+  onTestResultUpdate,
 }: {
   environment: object | undefined
   example: RequestExample
@@ -54,6 +55,7 @@ export const createRequestOperation = ({
   selectedSecuritySchemeUids?: Operation['selectedSecuritySchemeUids']
   server?: Server | undefined
   status?: EventBus<RequestStatus>
+  onTestResultUpdate?: (result: TestResult) => void
 }): ErrorResponse<{
   controller: AbortController
   sendRequest: () => SendRequestResponse
@@ -191,9 +193,7 @@ export const createRequestOperation = ({
 
         await executePostResponseScript(request['x-post-response'], {
           response,
-          onTestResultUpdate(result) {
-            console.log('TEST RESULT', result)
-          },
+          onTestResultUpdate,
         })
 
         // Safely check for cookie headers

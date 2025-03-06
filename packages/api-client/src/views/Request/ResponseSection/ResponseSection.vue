@@ -5,6 +5,7 @@ import { computed, ref, useId } from 'vue'
 import SectionFilter from '@/components/SectionFilter.vue'
 import ViewLayoutSection from '@/components/ViewLayout/ViewLayoutSection.vue'
 import type { SendRequestResult } from '@/libs/send-request/create-request-operation'
+import TestResults from '@/views/Request/ResponseSection/TestResults.vue'
 
 import RequestHeaders from './RequestHeaders.vue'
 import ResponseBody from './ResponseBody.vue'
@@ -182,6 +183,8 @@ const requestHeaders = computed(
           :id="filterIds.Headers"
           :headers="responseHeaders"
           :role="activeFilter === 'All' ? 'none' : 'tabpanel'" />
+
+        <TestResults />
 
         <template v-if="activeFilter === 'All' || activeFilter === 'Body'">
           <!-- Virtualized Text for massive responses -->
