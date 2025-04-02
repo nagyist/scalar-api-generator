@@ -7,6 +7,7 @@ describe('createResponseAssertions', () => {
   beforeEach(() => {
     mockResponse = new Response('', {
       status: 200,
+      statusText: 'OK',
       headers: new Headers({ 'content-type': 'application/json' }),
     })
   })
@@ -20,6 +21,11 @@ describe('createResponseAssertions', () => {
     it('throws when status does not match', () => {
       const assertions = createResponseAssertions(mockResponse)
       expect(() => assertions.have.status(404)).toThrow('Expected status 404 but got 200')
+    })
+
+    it('passes when status text matches', () => {
+      const assertions = createResponseAssertions(mockResponse)
+      expect(assertions.have.status('OK')).toBe(true)
     })
   })
 

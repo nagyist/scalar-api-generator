@@ -9,7 +9,7 @@ interface HeaderAssertions {
 
 export type ResponseAssertions = {
   have: {
-    status: (expectedStatus: number) => boolean
+    status: (expectedStatus: number | string) => boolean
     header: (headerName: string) => HeaderAssertions
     jsonSchema: (schema: object) => Promise<boolean>
   }
@@ -20,9 +20,15 @@ export type ResponseAssertions = {
 
 export const createResponseAssertions = (response: Response): ResponseAssertions => ({
   have: {
-    status: (expectedStatus: number) => {
-      if (response.status !== expectedStatus) {
-        throw new Error(`Expected status ${expectedStatus} but got ${response.status}`)
+    status: (expectedStatus: number | string) => {
+      if (typeof expectedStatus === 'number') {
+        if (response.status !== expectedStatus) {
+          throw new Error(`Expected status ${expectedStatus} but got ${response.status}`)
+        }
+      } else {
+        if (response.statusText !== expectedStatus) {
+          throw new Error(`Expected status text "${expectedStatus}" but got "${response.statusText}"`)
+        }
       }
       return true
     },
