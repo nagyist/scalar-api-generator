@@ -1,8 +1,8 @@
 import { type TestResult, executePostResponseScript } from '@/libs/execute-scripts'
 import type { ApiClientPlugin } from '@/plugins/plugin-manager'
-import { TestResults } from '@/plugins/post-response-scripts/components/TestResults'
 import { ref } from 'vue'
 import { PostResponseScripts } from './components/PostResponseScripts'
+import { TestResults } from './components/TestResults'
 
 export const postResponseScriptsPlugin: ApiClientPlugin = () => {
   const results = ref<TestResult[]>([])
