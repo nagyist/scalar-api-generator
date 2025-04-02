@@ -2,7 +2,7 @@ import { type ResponseAssertions, createResponseAssertions } from './create-resp
 
 export type ResponseUtils = {
   json: () => any
-  text: () => Promise<string>
+  text: () => string
   code: number
   statusText: string
   headers: Record<string, string>
@@ -13,19 +13,6 @@ export type ResponseUtils = {
 export const createResponseUtils = (response: Response): ResponseUtils => {
   let cachedJson: any
   let cachedText: string | undefined
-
-  // Create a promise that will resolve when the text is ready
-  const textPromise = response
-    .clone()
-    .text()
-    .then((text) => {
-      cachedText = text
-      try {
-        cachedJson = JSON.parse(text)
-      } catch {
-        cachedJson = null
-      }
-    })
 
   const responseStartTime = performance.now()
 
@@ -39,11 +26,11 @@ export const createResponseUtils = (response: Response): ResponseUtils => {
       }
       return cachedJson
     },
-    text: async () => {
-      await textPromise // Wait for the text to be ready
+    text: () => {
       if (cachedText === undefined) {
         throw new Error('Text response not ready. This is likely a bug.')
       }
+
       return cachedText
     },
     code: response.status,

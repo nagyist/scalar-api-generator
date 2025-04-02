@@ -1,13 +1,14 @@
 import type { TestResult } from '@/libs/execute-scripts'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { ref } from 'vue'
 import TestResults from './TestResults.vue'
 
-const results: TestResult[] = [
+const results = ref<TestResult[]>([
   { title: 'Test 1', passed: true, status: 'passed', duration: 100 },
   { title: 'Test 2', passed: false, status: 'failed', duration: 200 },
   { title: 'Test 3', passed: false, status: 'pending', duration: 300 },
-]
+])
 
 describe('TestResults', () => {
   it('doesn’t render when no results are provided', () => {

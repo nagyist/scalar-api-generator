@@ -10,8 +10,18 @@ type PostmanApi = {
   test: (name: string, fn: () => void | Promise<void>) => Promise<void>
   expect: (actual: any) => ExpectChain
 }
-export type PostmanContext = PostmanApi & {
-  pm: PostmanApi
+
+type SyncResponseUtils = Omit<ResponseUtils, 'text' | 'json'> & {
+  text: () => string
+  json: () => any
+}
+
+type SyncPostmanApi = Omit<PostmanApi, 'response'> & {
+  response: SyncResponseUtils
+}
+
+export type PostmanContext = SyncPostmanApi & {
+  pm: SyncPostmanApi
 }
 
 export const createPostmanContext = (

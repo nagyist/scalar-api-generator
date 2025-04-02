@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ScalarErrorBoundary } from '@scalar/components'
 import type { ResponseInstance } from '@scalar/oas-utils/entities/spec'
-import { computed, isRef, ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 
 import SectionFilter from '@/components/SectionFilter.vue'
 import ViewLayoutSection from '@/components/ViewLayout/ViewLayoutSection.vue'

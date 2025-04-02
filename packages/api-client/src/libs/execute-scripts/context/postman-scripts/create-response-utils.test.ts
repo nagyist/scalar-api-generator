@@ -20,7 +20,7 @@ describe('createResponseUtils', () => {
   it('parses JSON response correctly', async () => {
     const utils = createResponseUtils(mockResponse)
     // Wait for the text promise to resolve
-    await utils.text()
+    utils.text()
     const result = utils.json()
     expect(result).toEqual({ data: 'test' })
   })
@@ -32,13 +32,13 @@ describe('createResponseUtils', () => {
 
     const utils = createResponseUtils(invalidResponse)
     // Wait for the text promise to resolve
-    await utils.text()
+    utils.text()
     expect(() => utils.json()).toThrow('Response is not valid JSON')
   })
 
   it('returns response text', async () => {
     const utils = createResponseUtils(mockResponse)
-    const result = await utils.text()
+    const result = utils.text()
     expect(result).toBe('{"data":"test"}')
   })
 

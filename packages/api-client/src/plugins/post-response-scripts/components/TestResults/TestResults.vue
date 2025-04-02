@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, isRef, type Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 
 import ViewLayoutCollapse from '@/components/ViewLayout/ViewLayoutCollapse.vue'
 import type { TestResult } from '@/libs/execute-scripts'
