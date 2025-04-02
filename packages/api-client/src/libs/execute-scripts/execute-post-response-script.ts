@@ -87,7 +87,10 @@ const createScriptFunction = (script: string) => {
 
 export const executePostResponseScript = async (
   script: string | undefined,
-  data: { response: Response; onTestResultsUpdate?: ((results: TestResult[]) => void) | undefined },
+  data: {
+    response: Response
+    onTestResultsUpdate?: ((results: TestResult[]) => void) | undefined
+  },
 ): Promise<void> => {
   if (!script) {
     return

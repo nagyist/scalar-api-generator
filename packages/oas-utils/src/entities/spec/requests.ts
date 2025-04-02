@@ -26,6 +26,8 @@ export type ResponseInstance = Omit<Response, 'headers'> & {
   size: number
   /** The response status */
   status: number
+  /** The response status text */
+  statusText: string
   /** The response method */
   method: RequestMethod
   /** The request path */

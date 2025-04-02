@@ -15,7 +15,7 @@ import type {
   SecurityScheme,
   Server,
 } from '@scalar/oas-utils/entities/spec'
-import { isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
+import { httpStatusCodes, isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
 
 import { type TestResult, executePostResponseScript } from '@/libs/execute-scripts'
 import { buildRequestSecurity } from './build-request-security'
@@ -183,6 +183,8 @@ export const createRequestOperation = ({
           signal: controller.signal,
         })
 
+        const duration = Date.now() - startTime
+
         status?.emit('stop')
 
         // Clone the response before reading it
@@ -194,8 +196,21 @@ export const createRequestOperation = ({
         const arrayBuffer = await responseToRead.arrayBuffer()
         const responseData = decodeBuffer(arrayBuffer, responseType)
 
+        // This is missing in HTTP/2 requests. But we need it for the post-response scripts.
+        const statusText = response.statusText || httpStatusCodes[response.status]?.name || ''
+
+        // Create a new response with the statusText
+        const clonedResponse = response.clone()
+
+        const normalizedResponse = new Response(clonedResponse.body, {
+          status: clonedResponse.status,
+          statusText,
+          headers: clonedResponse.headers,
+        })
+
+        // Use normalizedResponse instead of response for the rest of the code
         await executePostResponseScript(request['x-post-response'], {
-          response,
+          response: normalizedResponse,
           onTestResultsUpdate,
         })
 
@@ -217,9 +232,10 @@ export const createRequestOperation = ({
               cookieHeaderKeys,
               data: responseData,
               size: arrayBuffer.byteLength,
-              duration: Date.now() - startTime,
+              duration,
               method: request.method,
               status: response.status,
+              statusText: statusText,
               path: pathString,
             },
           },

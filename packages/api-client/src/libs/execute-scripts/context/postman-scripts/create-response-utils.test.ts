@@ -44,7 +44,7 @@ describe('createResponseUtils', () => {
 
   it('provides status code', () => {
     const utils = createResponseUtils(mockResponse)
-    expect(utils.code).toBe(200)
+    expect(utils.status).toBe(200)
   })
 
   it('provides headers as object', () => {

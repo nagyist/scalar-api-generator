@@ -3,7 +3,8 @@ import { type ResponseAssertions, createResponseAssertions } from './create-resp
 export type ResponseUtils = {
   json: () => any
   text: () => Promise<string>
-  code: number
+  status: number
+  statusText: string
   headers: Record<string, string>
   to: ResponseAssertions
   responseTime: number
@@ -45,10 +46,12 @@ export const createResponseUtils = (response: Response): ResponseUtils => {
       }
       return cachedText
     },
-    code: response.status,
+    status: response.status,
+    statusText: response.statusText,
     headers: Object.fromEntries(response.headers.entries()),
     to: createResponseAssertions(response),
     get responseTime() {
+      // TODO: Use actual response time
       return Number((performance.now() - responseStartTime).toFixed(2))
     },
   }
