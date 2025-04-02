@@ -7,6 +7,7 @@ import { createFetchQueryParams } from '@/libs/send-request/create-fetch-query-p
 import { decodeBuffer } from '@/libs/send-request/decode-buffer'
 import { getCookieHeader, setRequestCookies } from '@/libs/send-request/set-request-cookies'
 import { replaceTemplateVariables } from '@/libs/string-template'
+import type { PluginManager } from '@/plugins/plugin-manager'
 import type { Cookie } from '@scalar/oas-utils/entities/cookie'
 import type {
   Operation,
@@ -16,9 +17,6 @@ import type {
   Server,
 } from '@scalar/oas-utils/entities/spec'
 import { httpStatusCodes, isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
-
-import type { TestResult } from '@/libs/execute-scripts'
-import type { PluginManager } from '@/plugins/plugin-manager'
 import { buildRequestSecurity } from './build-request-security'
 
 export type RequestStatus = 'start' | 'stop' | 'abort'
@@ -45,7 +43,6 @@ export const createRequestOperation = ({
   selectedSecuritySchemeUids = [],
   server,
   status,
-  onTestResultsUpdate,
   pluginManager,
 }: {
   environment: object | undefined
@@ -57,7 +54,6 @@ export const createRequestOperation = ({
   selectedSecuritySchemeUids?: Operation['selectedSecuritySchemeUids']
   server?: Server | undefined
   status?: EventBus<RequestStatus>
-  onTestResultsUpdate?: (results: TestResult[]) => void
   pluginManager?: PluginManager
 }): ErrorResponse<{
   controller: AbortController
@@ -177,6 +173,10 @@ export const createRequestOperation = ({
       }>
     > => {
       status?.emit('start')
+
+      if (pluginManager) {
+        pluginManager.executeHook('onBeforeRequest', { request: proxiedRequest })
+      }
 
       // Start timer to get response duration
       const startTime = Date.now()

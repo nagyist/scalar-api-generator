@@ -68,11 +68,6 @@
       "types": "./dist/views/Request/ResponseSection/index.d.ts",
       "default": "./dist/views/Request/ResponseSection/index.js"
     },
-    "./views/Request/ResponseSection/components/TestResults": {
-      "import": "./dist/views/Request/ResponseSection/components/TestResults/index.js",
-      "types": "./dist/views/Request/ResponseSection/components/TestResults/index.d.ts",
-      "default": "./dist/views/Request/ResponseSection/components/TestResults/index.js"
-    },
     "./views/Request/RequestSection": {
       "import": "./dist/views/Request/RequestSection/index.js",
       "types": "./dist/views/Request/RequestSection/index.d.ts",
@@ -97,6 +92,21 @@
       "import": "./dist/store/index.js",
       "types": "./dist/store/index.d.ts",
       "default": "./dist/store/index.js"
+    },
+    "./plugins/post-response-scripts": {
+      "import": "./dist/plugins/post-response-scripts/index.js",
+      "types": "./dist/plugins/post-response-scripts/index.d.ts",
+      "default": "./dist/plugins/post-response-scripts/index.js"
+    },
+    "./plugins/post-response-scripts/components/TestResults": {
+      "import": "./dist/plugins/post-response-scripts/components/TestResults/index.js",
+      "types": "./dist/plugins/post-response-scripts/components/TestResults/index.d.ts",
+      "default": "./dist/plugins/post-response-scripts/components/TestResults/index.js"
+    },
+    "./plugins/post-response-scripts/components/PostResponseScripts": {
+      "import": "./dist/plugins/post-response-scripts/components/PostResponseScripts/index.js",
+      "types": "./dist/plugins/post-response-scripts/components/PostResponseScripts/index.d.ts",
+      "default": "./dist/plugins/post-response-scripts/components/PostResponseScripts/index.js"
     },
     "./libs": {
       "import": "./dist/libs/index.js",
