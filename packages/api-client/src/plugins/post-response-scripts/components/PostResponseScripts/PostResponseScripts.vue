@@ -10,7 +10,7 @@ import ExampleScripts from './ExampleScripts.vue'
 import ScriptEditor from './ScriptEditor.vue'
 
 const { operation } = defineProps<{
-  operation: Operation
+  operation: Pick<Operation, 'uid' | 'x-post-response'>
 }>()
 
 const { requestMutators } = useWorkspace()
