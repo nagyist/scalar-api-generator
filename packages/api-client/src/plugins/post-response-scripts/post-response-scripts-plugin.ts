@@ -1,7 +1,6 @@
 import { type TestResult, executePostResponseScript } from '@/libs/execute-scripts'
 import { TestResults } from '@/plugins/post-response-scripts/components/TestResults'
 import type { Operation } from '@scalar/oas-utils/entities/spec'
-import { httpStatusCodes } from '@scalar/oas-utils/helpers'
 import { type Component, ref } from 'vue'
 import { PostResponseScripts } from './components/PostResponseScripts'
 
@@ -51,21 +50,9 @@ export const postResponseScriptsPlugin: ApiClientPlugin = () => {
       ],
     },
     hooks: {
-      async onResponseReceived({ response: givenResponse, operation }) {
-        // Create a new response with the statusText
-        const response = givenResponse.clone()
-
-        // This is missing in HTTP/2 requests. But we need it for the post-response scripts.
-        const statusText = response.statusText || httpStatusCodes[response.status]?.name || ''
-
-        const normalizedResponse = new Response(response.body, {
-          status: response.status,
-          statusText,
-          headers: response.headers,
-        })
-
+      async onResponseReceived({ response, operation }) {
         await executePostResponseScript(operation['x-post-response'], {
-          response: normalizedResponse,
+          response,
           onTestResultsUpdate: (newResults) => (results.value = [...newResults]),
         })
       },

@@ -15,7 +15,7 @@ import type {
   SecurityScheme,
   Server,
 } from '@scalar/oas-utils/entities/spec'
-import { isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
+import { httpStatusCodes, isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
 
 import type { TestResult } from '@/libs/execute-scripts'
 import type { PluginManager } from '@/plugins/plugin-manager'
@@ -199,15 +199,27 @@ export const createRequestOperation = ({
         const arrayBuffer = await responseToRead.arrayBuffer()
         const responseData = decodeBuffer(arrayBuffer, responseType)
 
+        // Create a new response with the statusText
+        const clonedResponse = response.clone()
+
+        // This is missing in HTTP/2 requests. But we need it for the post-clonedResponse scripts.
+        const statusText = clonedResponse.statusText || httpStatusCodes[clonedResponse.status]?.name || ''
+
+        const normalizedResponse = new Response(clonedResponse.body, {
+          status: clonedResponse.status,
+          statusText,
+          headers: clonedResponse.headers,
+        })
+
         if (pluginManager) {
-          pluginManager.executeHook('onResponseReceived', { response, operation: request })
+          pluginManager.executeHook('onResponseReceived', { response: normalizedResponse, operation: request })
         }
 
         // Safely check for cookie headers
         // TODO: polyfill
         const cookieHeaderKeys =
-          'getSetCookie' in response.headers && typeof response.headers.getSetCookie === 'function'
-            ? response.headers.getSetCookie()
+          'getSetCookie' in normalizedResponse.headers && typeof normalizedResponse.headers.getSetCookie === 'function'
+            ? normalizedResponse.headers.getSetCookie()
             : []
 
         return [
@@ -216,14 +228,13 @@ export const createRequestOperation = ({
             timestamp: Date.now(),
             request: example,
             response: {
-              ...response,
+              ...normalizedResponse,
               headers: responseHeaders,
               cookieHeaderKeys,
               data: responseData,
               size: arrayBuffer.byteLength,
               duration,
               method: request.method,
-              status: response.status,
               path: pathString,
             },
           },
