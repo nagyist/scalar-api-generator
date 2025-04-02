@@ -6,7 +6,7 @@ import SectionFilter from '@/components/SectionFilter.vue'
 import ViewLayoutSection from '@/components/ViewLayout/ViewLayoutSection.vue'
 import type { TestResult } from '@/libs/execute-scripts'
 import type { SendRequestResult } from '@/libs/send-request/create-request-operation'
-import { TestResults } from '@/views/Request/ResponseSection/components/TestResults'
+import { usePluginManager } from '@/plugins/plugin-manager'
 import ResponseBody from '@/views/Request/ResponseSection/ResponseBody.vue'
 import ResponseEmpty from '@/views/Request/ResponseSection/ResponseEmpty.vue'
 import ResponseLoadingOverlay from '@/views/Request/ResponseSection/ResponseLoadingOverlay.vue'
@@ -23,6 +23,9 @@ const { numWorkspaceRequests, response, requestResult } = defineProps<{
   requestResult: SendRequestResult | null | undefined
   testResults?: TestResult[] | undefined
 }>()
+
+const pluginManager = usePluginManager()
+const responseSectionViews = pluginManager.getViewComponents('response.section')
 
 // Headers
 const responseHeaders = computed(() => {
@@ -186,7 +189,16 @@ const requestHeaders = computed(
           :headers="responseHeaders"
           :role="activeFilter === 'All' ? 'none' : 'tabpanel'" />
 
-        <TestResults :results="testResults" />
+        <template
+          v-for="view in responseSectionViews"
+          :key="view.component">
+          <ScalarErrorBoundary>
+            <component
+              :is="view.component"
+              v-show="activeFilter === 'All' || activeFilter === view.title"
+              :results="testResults" />
+          </ScalarErrorBoundary>
+        </template>
 
         <template v-if="activeFilter === 'All' || activeFilter === 'Body'">
           <!-- Virtualized Text for massive responses -->

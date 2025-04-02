@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { EXAMPLE_SCRIPTS } from '@/consts/example-scripts'
+import { EXAMPLE_SCRIPTS } from '../../consts/example-scripts'
 
 const props = defineProps<{
   modelValue: string

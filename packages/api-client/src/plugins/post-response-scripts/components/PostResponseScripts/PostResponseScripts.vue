@@ -5,9 +5,9 @@ import { computed } from 'vue'
 import ViewLayoutCollapse from '@/components/ViewLayout/ViewLayoutCollapse.vue'
 import { useWorkspace } from '@/store'
 import { useActiveEntities } from '@/store/active-entities'
-import ExampleScripts from '@/views/Request/RequestSection/components/ExampleScripts.vue'
 
-import ScriptEditor from './components/ScriptEditor.vue'
+import ExampleScripts from './ExampleScripts.vue'
+import ScriptEditor from './ScriptEditor.vue'
 
 const { operation } = defineProps<{
   operation: Operation

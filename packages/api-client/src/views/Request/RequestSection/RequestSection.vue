@@ -16,9 +16,10 @@ import SectionFilter from '@/components/SectionFilter.vue'
 import ViewLayoutSection from '@/components/ViewLayout/ViewLayoutSection.vue'
 import { useLayout } from '@/hooks'
 import { matchesDomain } from '@/libs/send-request/set-request-cookies'
+import { usePluginManager } from '@/plugins/plugin-manager'
+import PostResponseScripts from '@/plugins/post-response-scripts/components/PostResponseScripts/PostResponseScripts.vue'
 import { useWorkspace } from '@/store'
 import type { EnvVariable } from '@/store/active-entities'
-import PostResponseScripts from '@/views/Request/RequestSection/PostResponseScripts.vue'
 import RequestBody from '@/views/Request/RequestSection/RequestBody.vue'
 import RequestParams from '@/views/Request/RequestSection/RequestParams.vue'
 import RequestPathParams from '@/views/Request/RequestSection/RequestPathParams.vue'
@@ -143,6 +144,10 @@ const handleRequestNamePlaceholder = () => {
       ? operation.path.replace(REGEX.PROTOCOL, '')
       : 'Request Name'
 }
+
+// Or use it in a component with the hook
+const pluginManager = usePluginManager()
+const requestSectionViews = pluginManager.getViewComponents('request.section')
 </script>
 <template>
   <ViewLayoutSection :aria-label="`Request: ${operation.summary}`">
@@ -270,11 +275,20 @@ const handleRequestNamePlaceholder = () => {
         title="Body"
         :workspace="workspace" />
 
-      <ScalarErrorBoundary>
-        <PostResponseScripts
-          v-show="selectedFilter === 'All' || selectedFilter === 'Scripts'"
-          :operation="operation" />
-      </ScalarErrorBoundary>
+      <template
+        v-for="view in requestSectionViews"
+        :key="view.component">
+        <ScalarErrorBoundary>
+          <component
+            :is="view.component"
+            v-show="selectedFilter === 'All' || selectedFilter === view.title"
+            :operation="operation" />
+        </ScalarErrorBoundary>
+      </template>
+
+      <!-- <PostResponseScripts
+        v-show="selectedFilter === 'All' || selectedFilter === 'Scripts'"
+        :operation="operation" /> -->
 
       <!-- Spacer -->
       <div class="-mt-0.25 z-1 flex flex-grow border-b" />

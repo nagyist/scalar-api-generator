@@ -3,7 +3,7 @@ import type { Operation } from '@scalar/oas-utils/entities/spec'
 
 import ViewLayoutCollapse from '@/components/ViewLayout/ViewLayoutCollapse.vue'
 
-import PostResponseScripts from './PostResponseScripts.vue'
+import PostResponseScripts from '../../../plugins/post-response-scripts/components/PostResponseScripts/PostResponseScripts.vue'
 
 const { operation } = defineProps<{
   operation: Operation
