@@ -11,14 +11,17 @@ export type ResponseAssertions = {
   have: {
     status: (expectedStatus: number | string) => boolean
     header: (headerName: string) => HeaderAssertions
-    jsonSchema: (schema: object) => Promise<boolean>
+    jsonSchema: (schema: object) => boolean
+    body: (expectedBody: string) => boolean
   }
   be: {
-    json: () => Promise<boolean>
+    json: () => boolean
   }
 }
 
-export const createResponseAssertions = (response: Response): ResponseAssertions => ({
+export const createResponseAssertions = (
+  response: Omit<Response, 'text' | 'json'> & { text: () => string; json: () => any },
+): ResponseAssertions => ({
   have: {
     status: (expectedStatus: number | string) => {
       if (typeof expectedStatus === 'number') {
@@ -58,11 +61,20 @@ export const createResponseAssertions = (response: Response): ResponseAssertions
         throw new Error(`JSON Schema validation failed: ${error instanceof Error ? error.message : String(error)}`)
       }
     },
+    body: (expectedBody: string) => {
+      const actualBody = response.text()
+
+      if (actualBody !== expectedBody) {
+        throw new Error(`Expected body to be "${expectedBody}" but got "${actualBody}"`)
+      }
+
+      return true
+    },
   },
   be: {
-    json: async () => {
+    json: () => {
       try {
-        await response.json()
+        response.json()
         return true
       } catch {
         throw new Error('Expected response to be valid JSON')

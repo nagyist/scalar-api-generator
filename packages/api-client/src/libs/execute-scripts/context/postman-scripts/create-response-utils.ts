@@ -36,7 +36,13 @@ export const createResponseUtils = (response: Response): ResponseUtils => {
     code: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries(response.headers.entries()),
-    to: createResponseAssertions(response),
+    to: createResponseAssertions({
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      json: () => cachedJson,
+      text: () => cachedText,
+    }),
     get responseTime() {
       // TODO: Use actual response time
       return Number((performance.now() - responseStartTime).toFixed(2))
