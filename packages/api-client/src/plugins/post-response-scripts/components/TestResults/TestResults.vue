@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, isRef, type Ref } from 'vue'
 
 import ViewLayoutCollapse from '@/components/ViewLayout/ViewLayoutCollapse.vue'
 import type { TestResult } from '@/libs/execute-scripts'
@@ -9,23 +9,23 @@ import TestResultItem from './TestResultItem.vue'
 import TestSummary from './TestSummary.vue'
 
 const { results } = defineProps<{
-  results?: TestResult[] | undefined
+  results?: Ref<TestResult[]> | undefined
 }>()
 
 const passedTests = computed(() =>
-  results?.filter((result: TestResult) => result.status === 'passed'),
+  results?.value?.filter((result: TestResult) => result.status === 'passed'),
 )
 
 const pendingTests = computed(() =>
-  results?.filter((result: TestResult) => result.status === 'pending'),
+  results?.value?.filter((result: TestResult) => result.status === 'pending'),
 )
 
 const failedTests = computed(() =>
-  results?.filter((result: TestResult) => result.status === 'failed'),
+  results?.value?.filter((result: TestResult) => result.status === 'failed'),
 )
 
 const allTestsPassed = computed(
-  () => passedTests.value?.length === results?.length,
+  () => passedTests.value?.length === results?.value?.length,
 )
 
 const currentState = computed(() => {
@@ -42,7 +42,7 @@ const currentState = computed(() => {
 
 const totalDuration = computed(
   () =>
-    results?.reduce(
+    results?.value?.reduce(
       (acc: number, curr: TestResult) => acc + curr.duration,
       0,
     ) ?? 0,
@@ -51,7 +51,7 @@ const totalDuration = computed(
 
 <template>
   <ViewLayoutCollapse
-    v-if="results?.length"
+    v-if="results?.value?.length"
     class="overflow-auto text-sm"
     :defaultOpen="true">
     <template #title> Tests </template>
@@ -62,13 +62,13 @@ const totalDuration = computed(
         :passedTestsCount="passedTests?.length"
         :pendingTestsCount="pendingTests?.length"
         :state="currentState"
-        :totalTestsCount="results?.length" />
+        :totalTestsCount="results?.value?.length" />
     </template>
 
     <div class="max-h-[calc(100%-32px)] divide-y overflow-y-auto border-t">
       <!-- Results -->
       <TestResultItem
-        v-for="result in results"
+        v-for="result in results?.value"
         :key="result.title"
         :currentState="result.status"
         :result="result" />
@@ -79,7 +79,7 @@ const totalDuration = computed(
         :failedTests="failedTests ?? []"
         :passedTests="passedTests ?? []"
         :pendingTests="pendingTests ?? []"
-        :results="results"
+        :results="results?.value"
         :totalDuration="totalDuration" />
     </div>
   </ViewLayoutCollapse>

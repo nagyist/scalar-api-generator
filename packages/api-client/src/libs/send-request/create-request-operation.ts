@@ -15,9 +15,10 @@ import type {
   SecurityScheme,
   Server,
 } from '@scalar/oas-utils/entities/spec'
-import { httpStatusCodes, isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
+import { isDefined, mergeUrls, shouldUseProxy } from '@scalar/oas-utils/helpers'
 
-import { type TestResult, executePostResponseScript } from '@/libs/execute-scripts'
+import type { TestResult } from '@/libs/execute-scripts'
+import type { PluginManager } from '@/plugins/plugin-manager'
 import { buildRequestSecurity } from './build-request-security'
 
 export type RequestStatus = 'start' | 'stop' | 'abort'
@@ -45,6 +46,7 @@ export const createRequestOperation = ({
   server,
   status,
   onTestResultsUpdate,
+  pluginManager,
 }: {
   environment: object | undefined
   example: RequestExample
@@ -56,6 +58,7 @@ export const createRequestOperation = ({
   server?: Server | undefined
   status?: EventBus<RequestStatus>
   onTestResultsUpdate?: (results: TestResult[]) => void
+  pluginManager?: PluginManager
 }): ErrorResponse<{
   controller: AbortController
   sendRequest: () => SendRequestResponse
@@ -196,23 +199,9 @@ export const createRequestOperation = ({
         const arrayBuffer = await responseToRead.arrayBuffer()
         const responseData = decodeBuffer(arrayBuffer, responseType)
 
-        // This is missing in HTTP/2 requests. But we need it for the post-response scripts.
-        const statusText = response.statusText || httpStatusCodes[response.status]?.name || ''
-
-        // Create a new response with the statusText
-        const clonedResponse = response.clone()
-
-        const normalizedResponse = new Response(clonedResponse.body, {
-          status: clonedResponse.status,
-          statusText,
-          headers: clonedResponse.headers,
-        })
-
-        // Use normalizedResponse instead of response for the rest of the code
-        await executePostResponseScript(request['x-post-response'], {
-          response: normalizedResponse,
-          onTestResultsUpdate,
-        })
+        if (pluginManager) {
+          pluginManager.executeHook('onResponseReceived', { response, operation: request })
+        }
 
         // Safely check for cookie headers
         // TODO: polyfill
@@ -235,7 +224,6 @@ export const createRequestOperation = ({
               duration,
               method: request.method,
               status: response.status,
-              statusText: statusText,
               path: pathString,
             },
           },

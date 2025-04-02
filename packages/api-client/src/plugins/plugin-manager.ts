@@ -21,35 +21,20 @@ export const createPluginManager = ({ plugins = [] }: CreatePluginManagerParams)
 
   return {
     /**
-     * Get all registered plugins
-     */
-    getPlugins: () => Array.from(registeredPlugins.values()),
-
-    /**
-     * Get a specific plugin by name
-     */
-    getPlugin: (name: string) => registeredPlugins.get(name),
-
-    /**
-     * Register a new plugin
-     */
-    registerPlugin: (plugin: ApiClientPlugin) => {
-      const pluginInstance = plugin()
-      registeredPlugins.set(pluginInstance.name, pluginInstance)
-    },
-
-    /**
-     * Unregister a plugin by name
-     */
-    unregisterPlugin: (name: string) => {
-      registeredPlugins.delete(name)
-    },
-
-    /**
      * Get all components for a specific view
      */
     getViewComponents: (view: keyof ReturnType<ApiClientPlugin>['views']) => {
       return Array.from(registeredPlugins.values()).flatMap((plugin) => plugin.views[view] || [])
+    },
+
+    /**
+     * Execute a hook for a specific event
+     */
+    executeHook: (event: keyof ReturnType<ApiClientPlugin>['hooks'], ...args: any[]) => {
+      const hooks = Array.from(registeredPlugins.values()).flatMap((plugin) => plugin.hooks[event] || [])
+
+      // Execute each hook with the provided arguments
+      return Promise.all(hooks.map((hook) => hook(...args)))
     },
   }
 }
@@ -64,8 +49,10 @@ export const PLUGIN_MANAGER_SYMBOL = Symbol() as InjectionKey<PluginManager>
  */
 export const usePluginManager = (): PluginManager => {
   const manager = inject(PLUGIN_MANAGER_SYMBOL)
+
   if (!manager) {
     throw new Error('Plugin manager not provided')
   }
+
   return manager
 }

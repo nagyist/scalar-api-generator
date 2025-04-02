@@ -13,6 +13,7 @@ import type { TestResult } from '@/libs/execute-scripts'
 import { createRequestOperation } from '@/libs/send-request'
 import type { SendRequestResult } from '@/libs/send-request/create-request-operation'
 import { validateParameters } from '@/libs/validate-parameters'
+import { usePluginManager } from '@/plugins/plugin-manager'
 import { useWorkspace } from '@/store'
 import { useActiveEntities } from '@/store/active-entities'
 import { useOpenApiWatcher } from '@/views/Request/hooks/useOpenApiWatcher'
@@ -34,6 +35,8 @@ const {
 const { cookies, requestHistory, showSidebar, securitySchemes, events } =
   workspaceContext
 const { isSidebarOpen } = useSidebar()
+
+const pluginManager = usePluginManager()
 
 const element = ref<HTMLDivElement>()
 
@@ -98,13 +101,8 @@ const executeRequest = async () => {
     status: events.requestStatus,
     securitySchemes: securitySchemes,
     server,
-    onTestResultsUpdate(results: TestResult[]) {
-      testResults.value = [...results]
-    },
+    pluginManager,
   })
-
-  // Reset test results for new request
-  testResults.value = null
 
   // Error from createRequestOperation
   if (error) {
@@ -183,9 +181,13 @@ watch(
       <div class="flex h-full flex-1 flex-col">
         <RouterView
           :invalidParams="invalidParams"
+<<<<<<< HEAD
           :selectedSecuritySchemeUids="selectedSecuritySchemeUids"
           :requestResult="requestResult"
           :testResults="testResults" />
+=======
+          :selectedSecuritySchemeUids="selectedSecuritySchemeUids" />
+>>>>>>> 220b289f7 (refactor: move the remaining code to the plugin)
       </div>
     </div>
   </div>

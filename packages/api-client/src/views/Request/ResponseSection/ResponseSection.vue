@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { ScalarErrorBoundary } from '@scalar/components'
 import type { ResponseInstance } from '@scalar/oas-utils/entities/spec'
-import { computed, ref, useId } from 'vue'
+import { computed, isRef, ref, useId } from 'vue'
 
 import SectionFilter from '@/components/SectionFilter.vue'
 import ViewLayoutSection from '@/components/ViewLayout/ViewLayoutSection.vue'
@@ -196,7 +197,7 @@ const requestHeaders = computed(
             <component
               :is="view.component"
               v-show="activeFilter === 'All' || activeFilter === view.title"
-              :results="testResults" />
+              v-bind="view.props ?? {}" />
           </ScalarErrorBoundary>
         </template>
 
