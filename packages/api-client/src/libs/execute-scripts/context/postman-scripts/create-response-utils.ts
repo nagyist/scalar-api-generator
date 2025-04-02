@@ -3,7 +3,7 @@ import { type ResponseAssertions, createResponseAssertions } from './create-resp
 export type ResponseUtils = {
   json: () => any
   text: () => Promise<string>
-  status: number
+  code: number
   statusText: string
   headers: Record<string, string>
   to: ResponseAssertions
@@ -46,7 +46,7 @@ export const createResponseUtils = (response: Response): ResponseUtils => {
       }
       return cachedText
     },
-    status: response.status,
+    code: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries(response.headers.entries()),
     to: createResponseAssertions(response),
