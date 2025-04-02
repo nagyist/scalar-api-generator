@@ -29,6 +29,7 @@ export type ExpectChain = {
       equal: (expected: any) => boolean
     }
     match: (pattern: RegExp) => boolean
+    eql: (expected: any) => boolean
   }
   not: {
     to: ExpectChain['to']
@@ -198,6 +199,14 @@ export const createExpectChain = (actual: any): ExpectChain => {
         }
         if (!pattern.test(actual)) {
           throw new Error(`Expected "${actual}" to match ${pattern}`)
+        }
+        return true
+      },
+      eql: (expected: any) => {
+        const actualStr = JSON.stringify(actual)
+        const expectedStr = JSON.stringify(expected)
+        if (actualStr !== expectedStr) {
+          throw new Error(`Expected ${actualStr} to deeply equal ${expectedStr}`)
         }
         return true
       },

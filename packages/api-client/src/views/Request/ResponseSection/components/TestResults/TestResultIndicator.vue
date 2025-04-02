@@ -16,9 +16,14 @@ const { state, totalTestsCount, pendingTestsCount, failedTestsCount } =
 const { cx } = useBindCx()
 
 const icon = computed(() => {
-  if (state === 'passed')
+  if (state === 'passed') {
     return { name: 'Checkmark', color: 'text-green p-0.25' }
-  if (state === 'failed') return { name: 'Close', color: 'text-red' }
+  }
+
+  if (state === 'failed') {
+    return { name: 'Close', color: 'text-red' }
+  }
+
   return { name: 'Ellipses', color: 'text-c-1' }
 })
 
@@ -45,8 +50,17 @@ const textVariants = cva({
 
 // Display the number of tests that passed e.g 1/3
 const getTestCountDisplay = computed(() => {
-  if (totalTestsCount === undefined) return ''
+  // When there are no tests, show nothing
+  if (totalTestsCount === undefined) {
+    return ''
+  }
 
+  // When they failed, show failed/total
+  if (failedTestsCount) {
+    return `${failedTestsCount}/${totalTestsCount}`
+  }
+
+  // When they passed, show passed/total
   const completedTests =
     totalTestsCount - (pendingTestsCount || 0) - (failedTestsCount || 0)
   return `${completedTests}/${totalTestsCount}`

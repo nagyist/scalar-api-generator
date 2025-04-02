@@ -307,4 +307,23 @@ describe('createExpectChain', () => {
       expect(() => chain.not.to.equal(1)).toThrow('Expected 1 to not equal 1')
     })
   })
+
+  describe('to.eql', () => {
+    it('passes when objects are deeply equal', () => {
+      const chain = createExpectChain({ a: 1, b: { c: 2 } })
+      expect(chain.to.eql({ a: 1, b: { c: 2 } })).toBe(true)
+    })
+
+    it('throws when objects are not deeply equal', () => {
+      const chain = createExpectChain({ a: 1, b: { c: 2 } })
+      expect(() => chain.to.eql({ a: 1, b: { c: 3 } })).toThrow(
+        'Expected {"a":1,"b":{"c":2}} to deeply equal {"a":1,"b":{"c":3}}',
+      )
+    })
+
+    it('handles arrays correctly', () => {
+      const chain = createExpectChain([1, { a: 2 }])
+      expect(chain.to.eql([1, { a: 2 }])).toBe(true)
+    })
+  })
 })
