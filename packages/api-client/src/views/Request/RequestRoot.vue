@@ -42,7 +42,6 @@ const element = ref<HTMLDivElement>()
 const requestAbortController = ref<AbortController>()
 const invalidParams = ref<Set<string>>(new Set())
 const requestResult = ref<SendRequestResult | null>(null)
-const testResults = ref<TestResult[]>([])
 
 /**
  * Selected scheme UIDs
@@ -180,13 +179,8 @@ watch(
       <div class="flex h-full flex-1 flex-col">
         <RouterView
           :invalidParams="invalidParams"
-<<<<<<< HEAD
           :selectedSecuritySchemeUids="selectedSecuritySchemeUids"
-          :requestResult="requestResult"
-          :testResults="testResults" />
-=======
-          :selectedSecuritySchemeUids="selectedSecuritySchemeUids" />
->>>>>>> 220b289f7 (refactor: move the remaining code to the plugin)
+          :requestResult="requestResult" />
       </div>
     </div>
   </div>
