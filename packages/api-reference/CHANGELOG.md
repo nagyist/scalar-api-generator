@@ -1,5 +1,27 @@
 # @scalar/api-reference
 
+## 1.28.12
+
+### Patch Changes
+
+- 97c1293: fix: enable sidebar scroll listener
+- 97c1293: fix: references client selector not working with custom client selected
+- 5844bd0: fix(api-reference): spacing and typography issues in schema property
+- Updated dependencies [73be3c0]
+- Updated dependencies [75667fe]
+- Updated dependencies [a097ea1]
+- Updated dependencies [cf5bf65]
+- Updated dependencies [3783345]
+  - @scalar/api-client@2.3.12
+  - @scalar/openapi-parser@0.10.14
+  - @scalar/types@0.1.6
+  - @scalar/oas-utils@0.2.126
+  - @scalar/snippetz@0.2.19
+  - @scalar/themes@0.9.84
+  - @scalar/code-highlight@0.0.25
+  - @scalar/components@0.13.43
+  - @scalar/use-hooks@0.1.38
+
 ## 1.28.11
 
 ### Patch Changes
