@@ -1,5 +1,25 @@
 # @scalar/code-highlight
 
+## 0.1.4
+
+### Patch Changes
+
+- 7913193: feat: updates hljs curl language style
+
+## 0.1.3
+
+### Patch Changes
+
+- 4156f1d: Expand workspace store integration
+- a37df33: fix: enhances introduction optical alignment
+
+## 0.1.2
+
+### Patch Changes
+
+- 00fc827: feat: updates markdown overall style
+- 358eb63: fix(api-reference): fix markdown styles pt2
+
 ## 0.1.1
 
 ### Patch Changes

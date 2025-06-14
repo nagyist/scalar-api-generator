@@ -20,7 +20,7 @@
     "vue",
     "vue3"
   ],
-  "version": "1.31.3",
+  "version": "1.31.11",
   "engines": {
     "node": ">=20"
   },
@@ -75,6 +75,7 @@
     "@scalar/types": "workspace:*",
     "@scalar/use-hooks": "workspace:*",
     "@scalar/use-toasts": "workspace:*",
+    "@scalar/workspace-store": "workspace:*",
     "@unhead/vue": "^1.11.11",
     "@vueuse/core": "catalog:*",
     "flatted": "^3.3.1",

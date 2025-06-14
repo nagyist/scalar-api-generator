@@ -1,5 +1,49 @@
 # @scalar/mock-server
 
+## 0.5.7
+
+### Patch Changes
+
+- 4156f1d: Expand workspace store integration
+- Updated dependencies [2974dd6]
+- Updated dependencies [221e35f]
+- Updated dependencies [166e298]
+- Updated dependencies [4156f1d]
+- Updated dependencies [f823d45]
+- Updated dependencies [37c90b8]
+  - @scalar/oas-utils@0.4.5
+  - @scalar/openapi-types@0.3.3
+  - @scalar/openapi-parser@0.17.0
+
+## 0.5.6
+
+### Patch Changes
+
+- Updated dependencies [11fabae]
+  - @scalar/openapi-parser@0.16.0
+  - @scalar/oas-utils@0.4.4
+
+## 0.5.5
+
+### Patch Changes
+
+- @scalar/oas-utils@0.4.4
+
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [17bc0d8]
+- Updated dependencies [b9dacba]
+- Updated dependencies [a73e9be]
+- Updated dependencies [8165b3b]
+- Updated dependencies [49c04cf]
+- Updated dependencies [f4332eb]
+- Updated dependencies [05c22c7]
+  - @scalar/openapi-parser@0.15.0
+  - @scalar/oas-utils@0.4.3
+  - @scalar/openapi-types@0.3.2
+
 ## 0.5.3
 
 ### Patch Changes

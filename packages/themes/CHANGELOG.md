@@ -1,5 +1,20 @@
 # @scalar/themes
 
+## 0.13.3
+
+### Patch Changes
+
+- Updated dependencies [221e35f]
+  - @scalar/types@0.2.3
+
+## 0.13.2
+
+### Patch Changes
+
+- ba84a3c: fix(themes): add alert color
+- 358eb63: fix(api-reference): fix markdown styles pt2
+  - @scalar/types@0.2.2
+
 ## 0.13.1
 
 ### Patch Changes

@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { DISCRIMINATOR_CONTEXT } from '@/hooks/useDiscriminator'
 
 import Schema from './Schema.vue'
 import SchemaProperty from './SchemaProperty.vue'
@@ -246,6 +247,37 @@ describe('SchemaProperty sub-schema', () => {
     expect(enumValues).toHaveLength(1)
   })
 
+  it('show enum values ​​and descriptions', () => {
+    const wrapper = mount(SchemaProperty, {
+      props: {
+        value: {
+          'type': 'string',
+          'enum': ['Ice giant', 'Dwarf', 'Gas', 'Iron'],
+          'title': 'Planet',
+          'description': 'The type of planet',
+          'x-enumDescriptions': {
+            'Ice giant': 'A planet with a thick atmosphere of water, methane, and ammonia ice',
+            'Dwarf': 'A planet that is not massive enough to clear its orbit',
+            'Gas': 'A planet with a thick atmosphere of hydrogen and helium',
+            'Iron': 'A planet made mostly of iron',
+          },
+        },
+      },
+    })
+
+    const enumList = wrapper.find('.property-enum .property-list')
+    const html = enumList.html()
+
+    expect(html).toContain('Ice giant')
+    expect(html).toContain('Dwarf')
+    expect(html).toContain('Gas')
+    expect(html).toContain('Iron')
+    expect(html).toContain('A planet with a thick atmosphere of water, methane, and ammonia ice')
+    expect(html).toContain('A planet that is not massive enough to clear its orbit')
+    expect(html).toContain('A planet with a thick atmosphere of hydrogen and helium')
+    expect(html).toContain('A planet made mostly of iron')
+  })
+
   it('shows pattern properties for type object', async () => {
     const wrapper = mount(SchemaProperty, {
       props: {
@@ -278,7 +310,7 @@ describe('SchemaProperty sub-schema', () => {
     expect(enumValues).toHaveLength(3)
   })
 
-  it('renders compositions for array items', () => {
+  it('renders compositions for array items', async () => {
     const wrapper = mount(SchemaProperty, {
       props: {
         value: {
@@ -296,7 +328,10 @@ describe('SchemaProperty sub-schema', () => {
       },
     })
 
-    // Find 'foobar' only once
+    expect(wrapper.find('button[aria-expanded="false"]').exists()).toBe(true)
+
+    await wrapper.find('.schema-card-title').trigger('click')
+
     const foobar = wrapper.html().match(/foobar/g)
     expect(foobar).toHaveLength(1)
   })
@@ -386,5 +421,105 @@ describe('SchemaProperty sub-schema', () => {
     // Check that the titles are displayed correctly
     expect(wrapper.html()).toContain('foo (1)')
     expect(wrapper.html()).toContain('bar (1)')
+  })
+
+  it('renders array type object with properties correctly', async () => {
+    const wrapper = mount(SchemaProperty, {
+      props: {
+        value: {
+          type: ['object', 'null'],
+          properties: {
+            galaxy: {
+              type: 'string',
+              description: 'Galaxy where the planet is located',
+            },
+            satellites: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'List of satellites orbiting the planet',
+            },
+            habitable: {
+              type: 'boolean',
+              description: 'Whether the planet can support life',
+            },
+          },
+        },
+      },
+    })
+
+    const button = wrapper.find('.schema-card-title')
+    await button.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const html = wrapper.html()
+
+    expect(html).toContain('galaxy')
+    expect(html).toContain('Galaxy where the planet is located')
+    expect(html).toContain('satellites')
+    expect(html).toContain('List of satellites orbiting the planet')
+    expect(html).toContain('habitable')
+    expect(html).toContain('Whether the planet can support life')
+  })
+})
+
+describe('SchemaProperty discriminator handling', () => {
+  it('prevents discriminator context recursion for child properties', async () => {
+    const mockDiscriminatorContext = {
+      value: {
+        mergedSchema: {
+          type: 'object',
+          properties: {
+            satellites: {
+              type: 'string',
+              description: 'Satellites surrounding the planet',
+            },
+          },
+          required: ['satellites'],
+        },
+        selectedType: 'Planet',
+        discriminatorMapping: { Planet: 'PlanetSatellites' },
+        discriminatorPropertyName: 'type',
+      },
+    }
+
+    const childPropertySchema = {
+      type: 'object',
+      properties: {
+        galaxy: {
+          type: 'string',
+          description: 'Galaxy of the planet',
+        },
+      },
+      required: ['galaxy'],
+    }
+
+    const wrapper = mount(SchemaProperty, {
+      props: {
+        value: childPropertySchema,
+        name: 'Satellites',
+        level: 1,
+      },
+      global: {
+        provide: {
+          [DISCRIMINATOR_CONTEXT]: mockDiscriminatorContext,
+        },
+      },
+    })
+
+    const expandButton = wrapper.find('.schema-card-title')
+    if (expandButton.exists()) {
+      await expandButton.trigger('click')
+      await wrapper.vm.$nextTick()
+    }
+
+    const html = wrapper.html()
+
+    expect(html).toContain('galaxy')
+    expect(html).toContain('Galaxy of the planet')
+
+    expect(html).not.toContain('satellites')
+    expect(html).not.toContain('Satellites surrounding the planet')
   })
 })

@@ -61,11 +61,14 @@ The OpenAPI specification allows to point to external files (URLs or files). But
 
 #### Plugins
 
+If you are on a browser environment import plugins from `@scalar/openapi-parser/plugins-browser` while if you are on a node environment you can import from `@scalar/openapi-parser/plugins`
+
 ##### fetchUrls
 This plugins handles all external urls. It works for both node.js and browser environment
 
 ```ts
-import { bundle, fetchUrls } from '@scalar/openapi-parser'
+import { bundle } from '@scalar/openapi-parser'
+import { fetchUrls } from '@scalar/openapi-parser/plugins-browser'
 
 const document = {
   openapi: '3.1.0',
@@ -171,7 +174,8 @@ console.log(result)
 This plugins handles local files. Only works on node.js environment
 
 ```ts
-import { bundle, readFiles } from '@scalar/openapi-parser'
+import { bundle } from '@scalar/openapi-parser'
+import { readFiles } from '@scalar/openapi-parser/plugins-browser'
 
 const document = {
   openapi: '3.1.0',
@@ -202,6 +206,48 @@ const result = await bundle(
   {
     plugins: [
       readFiles(),
+    ],
+    treeShake: false
+  },
+)
+
+// Bundled document
+console.log(result)
+```
+
+##### parseJson
+
+You can pass raw json string as input
+```ts
+import { bundle } from '@scalar/openapi-parser'
+import { parseJson } from '@scalar/openapi-parser/plugins-browser'
+
+const result = await bundle(
+  '{ "openapi": "3.1.1" }',
+  {
+    plugins: [
+      parseJson(),
+    ],
+    treeShake: false
+  },
+)
+
+// Bundled document
+console.log(result)
+```
+
+##### parseYaml
+
+You can pass raw yaml string as input
+```ts
+import { bundle } from '@scalar/openapi-parser'
+import { parseYaml } from '@scalar/openapi-parser/plugins-browser'
+
+const result = await bundle(
+  'openapi: "3.1.1"\n',
+  {
+    plugins: [
+      parseYaml(),
     ],
     treeShake: false
   },
