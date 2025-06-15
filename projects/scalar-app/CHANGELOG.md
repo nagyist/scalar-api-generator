@@ -1,5 +1,58 @@
 # scalar-app
 
+## 0.1.205
+
+### Patch Changes
+
+- Updated dependencies [a5d010c]
+- Updated dependencies [b12cd8e]
+  - @scalar/api-client@2.5.7
+  - @scalar/components@0.14.9
+
+## 0.1.204
+
+### Patch Changes
+
+- 4156f1d: Expand workspace store integration
+- Updated dependencies [282129b]
+- Updated dependencies [a5b399d]
+- Updated dependencies [4156f1d]
+- Updated dependencies [711b435]
+- Updated dependencies [177438d]
+  - @scalar/api-client@2.5.6
+  - @scalar/components@0.14.8
+  - @scalar/import@0.4.10
+  - @scalar/themes@0.13.3
+
+## 0.1.203
+
+### Patch Changes
+
+- @scalar/api-client@2.5.5
+- @scalar/import@0.4.9
+
+## 0.1.202
+
+### Patch Changes
+
+- @scalar/api-client@2.5.4
+- @scalar/import@0.4.8
+- @scalar/components@0.14.7
+
+## 0.1.201
+
+### Patch Changes
+
+- Updated dependencies [79975dd]
+- Updated dependencies [ba84a3c]
+- Updated dependencies [8165b3b]
+- Updated dependencies [ba84a3c]
+- Updated dependencies [358eb63]
+  - @scalar/api-client@2.5.3
+  - @scalar/themes@0.13.2
+  - @scalar/import@0.4.7
+  - @scalar/components@0.14.6
+
 ## 0.1.200
 
 ### Patch Changes

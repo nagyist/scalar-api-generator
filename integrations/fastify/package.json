@@ -17,7 +17,7 @@
     "openapi",
     "swagger"
   ],
-  "version": "1.31.3",
+  "version": "1.31.11",
   "engines": {
     "node": ">=20"
   },
@@ -55,7 +55,6 @@
     "@scalar/core": "workspace:*",
     "@scalar/openapi-parser": "workspace:*",
     "@scalar/openapi-types": "workspace:*",
-    "@scalar/types": "workspace:*",
     "fastify-plugin": "^4.5.1",
     "github-slugger": "^2.0.0"
   },

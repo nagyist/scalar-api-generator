@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import fastify, { type FastifyInstance } from 'fastify'
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   bundle,
   getHash,
@@ -14,22 +14,26 @@ import {
 } from './bundle'
 import { fetchUrls } from './plugins/fetch-urls'
 import { readFiles } from './plugins/read-files'
-import getPort from 'get-port'
+import { setTimeout } from 'node:timers/promises'
+import { parseJson } from '@/utils/bundle/plugins/parse-json'
+import { parseYaml } from '@/utils/bundle/plugins/parse-yaml'
+import YAML from 'yaml'
 
 describe('bundle', () => {
   describe('external urls', () => {
     let server: FastifyInstance
+    const PORT = 7289
 
     beforeEach(() => {
       server = fastify({ logger: false })
     })
 
-    afterAll(async () => {
+    afterEach(async () => {
       await server.close()
+      await setTimeout(100)
     })
 
     it('bundles external urls', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const external = {
@@ -38,6 +42,7 @@ describe('bundle', () => {
       server.get('/', (_, reply) => {
         reply.send(external)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -74,7 +79,6 @@ describe('bundle', () => {
     })
 
     it('bundles external urls from resolved external piece', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
       const chunk2 = {
         hey: 'hey',
@@ -99,6 +103,7 @@ describe('bundle', () => {
       server.get('/chunk2', (_, reply) => {
         reply.send(chunk2)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -137,7 +142,6 @@ describe('bundle', () => {
     })
 
     it('should correctly handle only urls without a pointer', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       server.get('/', (_, reply) => {
@@ -145,6 +149,7 @@ describe('bundle', () => {
           a: 'a',
         })
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -173,7 +178,6 @@ describe('bundle', () => {
 
     it('caches results for same resource', async () => {
       const fn = vi.fn()
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       server.get('/', (_, reply) => {
@@ -217,7 +221,6 @@ describe('bundle', () => {
     })
 
     it('handles correctly external nested refs', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       server.get('/nested/another-file.json', (_, reply) => {
@@ -233,6 +236,7 @@ describe('bundle', () => {
           },
         })
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -261,7 +265,6 @@ describe('bundle', () => {
     })
 
     it('does not merge paths when we use absolute urls', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       server.get('/top-level', (_, reply) => {
@@ -277,6 +280,7 @@ describe('bundle', () => {
           },
         })
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -305,7 +309,6 @@ describe('bundle', () => {
     })
 
     it('bundles from a url input', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       server.get('/top-level', (_, reply) => {
@@ -329,6 +332,7 @@ describe('bundle', () => {
           },
         })
       })
+
       await server.listen({ port: PORT })
 
       const output = await bundle(`${url}/base/openapi.json`, { plugins: [fetchUrls()], treeShake: false })
@@ -351,7 +355,6 @@ describe('bundle', () => {
     })
 
     it('generated a map when we turn the urlMap on', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       server.get('/top-level', (_, reply) => {
@@ -375,6 +378,7 @@ describe('bundle', () => {
           },
         })
       })
+
       await server.listen({ port: PORT })
 
       const output = await bundle(`${url}/base/openapi.json`, {
@@ -405,7 +409,6 @@ describe('bundle', () => {
     })
 
     it('prefixes the refs only once', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk2 = {
@@ -429,6 +432,7 @@ describe('bundle', () => {
       server.get('/chunk2', (_, reply) => {
         reply.send(chunk2)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -489,7 +493,6 @@ describe('bundle', () => {
     })
 
     it('bundles array references', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -501,6 +504,7 @@ describe('bundle', () => {
       server.get('/chunk1', (_, reply) => {
         reply.send(chunk1)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -532,7 +536,6 @@ describe('bundle', () => {
     })
 
     it('bundles subpart of the document', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -547,6 +550,7 @@ describe('bundle', () => {
         fn()
         reply.send(chunk1)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -621,7 +625,6 @@ describe('bundle', () => {
     })
 
     it('tree shakes the external documents correctly', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -643,6 +646,7 @@ describe('bundle', () => {
       server.get('/chunk1', (_, reply) => {
         reply.send(chunk1)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -676,7 +680,6 @@ describe('bundle', () => {
     })
 
     it('tree shakes correctly when working with nested external refs', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk2 = {
@@ -714,6 +717,7 @@ describe('bundle', () => {
       server.get('/chunk2', (_, reply) => {
         reply.send(chunk2)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -760,7 +764,6 @@ describe('bundle', () => {
     })
 
     it('handles circular references when we treeshake', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -816,7 +819,6 @@ describe('bundle', () => {
     })
 
     it('handles chunks', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -836,6 +838,7 @@ describe('bundle', () => {
       server.get('/chunk2', (_, reply) => {
         reply.send(chunk2)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -910,7 +913,6 @@ describe('bundle', () => {
     })
 
     it('when bundle partial document we ensure all the dependencies references are resolved', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -921,6 +923,7 @@ describe('bundle', () => {
       server.get('/chunk1', (_, reply) => {
         reply.send(chunk1)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -972,7 +975,6 @@ describe('bundle', () => {
     })
 
     it('should correctly handle nested chunk urls', async () => {
-      const PORT = await getPort()
       const url = `http://localhost:${PORT}`
 
       const chunk1 = {
@@ -1014,6 +1016,7 @@ describe('bundle', () => {
       server.get('/external/document.json', (_, reply) => {
         reply.send(external)
       })
+
       await server.listen({ port: PORT })
 
       const input = {
@@ -1099,100 +1102,96 @@ describe('bundle', () => {
       })
     })
 
-    describe('hooks', () => {
-      it('run success hook', async () => {
-        const PORT = await getPort()
-        const url = `http://localhost:${PORT}`
+    it('run success hook', async () => {
+      const url = `http://localhost:${PORT}`
 
-        const chunk1 = {
-          description: 'Chunk 1',
-        }
+      const chunk1 = {
+        description: 'Chunk 1',
+      }
 
-        server.get('/chunk1', (_, reply) => {
-          reply.send(chunk1)
-        })
-
-        await server.listen({ port: PORT })
-
-        const input = {
-          a: {
-            $ref: `${url}/chunk1#`,
-          },
-        }
-
-        const resolveStart = vi.fn()
-        const resolveError = vi.fn()
-        const resolveSuccess = vi.fn()
-
-        const refA = input.a
-
-        await bundle(input, {
-          plugins: [fetchUrls()],
-          treeShake: false,
-          hooks: {
-            onResolveStart(value) {
-              resolveStart(value)
-            },
-            onResolveError(value) {
-              resolveError(value)
-            },
-            onResolveSuccess(value) {
-              resolveSuccess(value)
-            },
-          },
-        })
-
-        expect(resolveStart).toHaveBeenCalledOnce()
-        expect(resolveStart).toHaveBeenCalledWith(refA)
-        expect(resolveSuccess).toHaveBeenCalledOnce()
-        expect(resolveSuccess).toHaveBeenCalledWith(refA)
-        expect(resolveError).not.toHaveBeenCalledOnce()
+      server.get('/chunk1', (_, reply) => {
+        reply.send(chunk1)
       })
 
-      it('run success hook', async () => {
-        const PORT = await getPort()
-        const url = `http://localhost:${PORT}`
+      await server.listen({ port: PORT })
 
-        server.get('/chunk1', (_, reply) => {
-          reply.code(404).send()
-        })
+      const input = {
+        a: {
+          $ref: `${url}/chunk1#`,
+        },
+      }
 
-        await server.listen({ port: PORT })
+      const resolveStart = vi.fn()
+      const resolveError = vi.fn()
+      const resolveSuccess = vi.fn()
 
-        const input = {
-          a: {
-            $ref: `${url}/chunk1#`,
+      const refA = input.a
+
+      await bundle(input, {
+        plugins: [fetchUrls()],
+        treeShake: false,
+        hooks: {
+          onResolveStart(value) {
+            resolveStart(value)
           },
-        }
-
-        const resolveStart = vi.fn()
-        const resolveError = vi.fn()
-        const resolveSuccess = vi.fn()
-
-        const refA = input.a
-
-        await bundle(input, {
-          plugins: [fetchUrls()],
-          treeShake: false,
-          hooks: {
-            onResolveStart(value) {
-              resolveStart(value)
-            },
-            onResolveError(value) {
-              resolveError(value)
-            },
-            onResolveSuccess(value) {
-              resolveSuccess(value)
-            },
+          onResolveError(value) {
+            resolveError(value)
           },
-        })
-
-        expect(resolveStart).toHaveBeenCalledOnce()
-        expect(resolveStart).toHaveBeenCalledWith(refA)
-        expect(resolveSuccess).not.toHaveBeenCalledOnce()
-        expect(resolveError).toHaveBeenCalledOnce()
-        expect(resolveError).toHaveBeenCalledWith(refA)
+          onResolveSuccess(value) {
+            resolveSuccess(value)
+          },
+        },
       })
+
+      expect(resolveStart).toHaveBeenCalledOnce()
+      expect(resolveStart).toHaveBeenCalledWith(refA)
+      expect(resolveSuccess).toHaveBeenCalledOnce()
+      expect(resolveSuccess).toHaveBeenCalledWith(refA)
+      expect(resolveError).not.toHaveBeenCalledOnce()
+    })
+
+    it('run success hook', async () => {
+      const url = `http://localhost:${PORT}`
+
+      server.get('/chunk1', (_, reply) => {
+        reply.code(404).send()
+      })
+
+      await server.listen({ port: PORT })
+
+      const input = {
+        a: {
+          $ref: `${url}/chunk1#`,
+        },
+      }
+
+      const resolveStart = vi.fn()
+      const resolveError = vi.fn()
+      const resolveSuccess = vi.fn()
+
+      const refA = input.a
+
+      await bundle(input, {
+        plugins: [fetchUrls()],
+        treeShake: false,
+        hooks: {
+          onResolveStart(value) {
+            resolveStart(value)
+          },
+          onResolveError(value) {
+            resolveError(value)
+          },
+          onResolveSuccess(value) {
+            resolveSuccess(value)
+          },
+        },
+      })
+
+      expect(resolveStart).toHaveBeenCalledOnce()
+      expect(resolveStart).toHaveBeenCalledWith(refA)
+      expect(resolveSuccess).not.toHaveBeenCalledOnce()
+      expect(resolveError).toHaveBeenCalledOnce()
+      expect(resolveError).toHaveBeenCalledWith(refA)
     })
   })
 
@@ -1349,12 +1348,104 @@ describe('bundle', () => {
       })
     })
   })
+
+  describe('json inputs', () => {
+    it('should process json inputs', async () => {
+      const result = await bundle('{ "openapi": "3.1", "info": { "title": "Simple API", "version": "1.0" } }', {
+        treeShake: false,
+        plugins: [parseJson()],
+      })
+
+      expect(result).toEqual({
+        openapi: '3.1',
+        info: {
+          title: 'Simple API',
+          version: '1.0',
+        },
+      })
+    })
+
+    it('should correctly resolve refs for json inputs', async () => {
+      const chunk1 = { a: 'a', b: 'b' }
+      const chunk1Path = randomUUID()
+
+      await fs.writeFile(chunk1Path, JSON.stringify(chunk1))
+
+      const input = JSON.stringify({
+        a: {
+          '$ref': `./${chunk1Path}#/a`,
+        },
+      })
+
+      const result = await bundle(input, { plugins: [readFiles(), parseJson()], treeShake: false })
+
+      await fs.rm(chunk1Path)
+
+      expect(result).toEqual({
+        'x-ext': {
+          [await getHash(chunk1Path)]: {
+            ...chunk1,
+          },
+        },
+        a: {
+          $ref: `#/x-ext/${await getHash(chunk1Path)}/a`,
+        },
+      })
+    })
+  })
+
+  describe('yaml inputs', () => {
+    it('should process yaml inputs', async () => {
+      const result = await bundle('openapi: "3.1"\ninfo:\n  title: Simple API\n  version: "1.0"\n', {
+        treeShake: false,
+        plugins: [parseYaml()],
+      })
+
+      expect(result).toEqual({
+        openapi: '3.1',
+        info: {
+          title: 'Simple API',
+          version: '1.0',
+        },
+      })
+    })
+
+    it('should correctly resolve refs for yaml inputs', async () => {
+      const chunk1 = { a: 'a', b: 'b' }
+      const chunk1Path = randomUUID()
+
+      await fs.writeFile(chunk1Path, YAML.stringify(chunk1))
+
+      const input = YAML.stringify({
+        a: {
+          '$ref': `./${chunk1Path}#/a`,
+        },
+      })
+
+      const result = await bundle(input, { plugins: [parseYaml(), readFiles()], treeShake: false })
+
+      await fs.rm(chunk1Path)
+
+      expect(result).toEqual({
+        'x-ext': {
+          [await getHash(chunk1Path)]: {
+            ...chunk1,
+          },
+        },
+        a: {
+          $ref: `#/x-ext/${await getHash(chunk1Path)}/a`,
+        },
+      })
+    })
+  })
 })
 
 describe('isRemoteUrl', () => {
   it.each([
     ['https://example.com/schema.json', true],
     ['http://api.example.com/schemas/user.json', true],
+    ['file://some/path', false],
+    ['random-string', false],
     ['#/components/schemas/User', false],
     ['./local-schema.json', false],
   ])('detects remote urls', (a, b) => {

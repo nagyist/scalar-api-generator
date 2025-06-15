@@ -1,5 +1,103 @@
 # @scalar/api-client
 
+## 2.5.7
+
+### Patch Changes
+
+- a5d010c: feat: implement deleteRow function for RequestBody form data
+- b12cd8e: fix: updates introduction auth table style
+  - @scalar/components@0.14.9
+  - @scalar/use-codemirror@0.12.10
+
+## 2.5.6
+
+### Patch Changes
+
+- 282129b: fix: safely create a new response when there is no content
+- a5b399d: fix: updates address bar background style
+- 4156f1d: Expand workspace store integration
+- 711b435: fix: re-create client store on document change
+- Updated dependencies [2974dd6]
+- Updated dependencies [221e35f]
+- Updated dependencies [166e298]
+- Updated dependencies [b6ed440]
+- Updated dependencies [4156f1d]
+- Updated dependencies [f823d45]
+- Updated dependencies [177438d]
+- Updated dependencies [37c90b8]
+  - @scalar/oas-utils@0.4.5
+  - @scalar/openapi-types@0.3.3
+  - @scalar/helpers@0.0.4
+  - @scalar/types@0.2.3
+  - @scalar/openapi-parser@0.17.0
+  - @scalar/snippetz@0.3.1
+  - @scalar/components@0.14.8
+  - @scalar/import@0.4.10
+  - @scalar/icons@0.4.3
+  - @scalar/postman-to-openapi@0.3.8
+  - @scalar/themes@0.13.3
+  - @scalar/draggable@0.2.0
+  - @scalar/object-utils@1.2.1
+  - @scalar/use-codemirror@0.12.9
+  - @scalar/use-hooks@0.2.2
+  - @scalar/use-toasts@0.8.0
+  - @scalar/use-tooltip@1.1.0
+
+## 2.5.5
+
+### Patch Changes
+
+- Updated dependencies [11fabae]
+  - @scalar/openapi-parser@0.16.0
+  - @scalar/import@0.4.9
+  - @scalar/oas-utils@0.4.4
+
+## 2.5.4
+
+### Patch Changes
+
+- Updated dependencies [8bc9f20]
+  - @scalar/helpers@0.0.3
+  - @scalar/import@0.4.8
+  - @scalar/oas-utils@0.4.4
+  - @scalar/postman-to-openapi@0.3.7
+  - @scalar/components@0.14.7
+  - @scalar/use-codemirror@0.12.8
+
+## 2.5.3
+
+### Patch Changes
+
+- 79975dd: fix: updates auth section display logic
+- 8165b3b: feat(helpers): added new helpers package
+- Updated dependencies [17bc0d8]
+- Updated dependencies [b9dacba]
+- Updated dependencies [a73e9be]
+- Updated dependencies [ba84a3c]
+- Updated dependencies [8165b3b]
+- Updated dependencies [49c04cf]
+- Updated dependencies [ba84a3c]
+- Updated dependencies [f4332eb]
+- Updated dependencies [358eb63]
+- Updated dependencies [05c22c7]
+  - @scalar/openapi-parser@0.15.0
+  - @scalar/themes@0.13.2
+  - @scalar/postman-to-openapi@0.3.6
+  - @scalar/oas-utils@0.4.3
+  - @scalar/helpers@0.0.2
+  - @scalar/import@0.4.7
+  - @scalar/components@0.14.6
+  - @scalar/openapi-types@0.3.2
+  - @scalar/use-codemirror@0.12.7
+  - @scalar/draggable@0.2.0
+  - @scalar/icons@0.4.2
+  - @scalar/object-utils@1.2.1
+  - @scalar/snippetz@0.3.0
+  - @scalar/types@0.2.2
+  - @scalar/use-hooks@0.2.2
+  - @scalar/use-toasts@0.8.0
+  - @scalar/use-tooltip@1.1.0
+
 ## 2.5.2
 
 ### Patch Changes

@@ -1,5 +1,65 @@
 # @scalar/openapi-to-markdown
 
+## 0.2.11
+
+### Patch Changes
+
+- @scalar/components@0.14.9
+
+## 0.2.10
+
+### Patch Changes
+
+- 4156f1d: Expand workspace store integration
+- Updated dependencies [2974dd6]
+- Updated dependencies [221e35f]
+- Updated dependencies [166e298]
+- Updated dependencies [b6ed440]
+- Updated dependencies [4156f1d]
+- Updated dependencies [f823d45]
+- Updated dependencies [177438d]
+- Updated dependencies [37c90b8]
+  - @scalar/oas-utils@0.4.5
+  - @scalar/openapi-types@0.3.3
+  - @scalar/types@0.2.3
+  - @scalar/openapi-parser@0.17.0
+  - @scalar/snippetz@0.3.1
+  - @scalar/components@0.14.8
+
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [11fabae]
+  - @scalar/openapi-parser@0.16.0
+  - @scalar/oas-utils@0.4.4
+
+## 0.2.8
+
+### Patch Changes
+
+- @scalar/oas-utils@0.4.4
+- @scalar/components@0.14.7
+
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [17bc0d8]
+- Updated dependencies [b9dacba]
+- Updated dependencies [a73e9be]
+- Updated dependencies [8165b3b]
+- Updated dependencies [49c04cf]
+- Updated dependencies [ba84a3c]
+- Updated dependencies [f4332eb]
+- Updated dependencies [05c22c7]
+  - @scalar/openapi-parser@0.15.0
+  - @scalar/oas-utils@0.4.3
+  - @scalar/components@0.14.6
+  - @scalar/openapi-types@0.3.2
+  - @scalar/snippetz@0.3.0
+  - @scalar/types@0.2.2
+
 ## 0.2.6
 
 ### Patch Changes

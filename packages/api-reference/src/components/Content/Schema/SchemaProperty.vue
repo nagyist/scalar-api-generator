@@ -135,6 +135,11 @@ const discriminatorContext = inject(DISCRIMINATOR_CONTEXT, null)
 
 /** Handle schema value according to discriminator context */
 const schema = computed(() => {
+  // Prevent recursion in discriminator context presence
+  if (props.level > 0) {
+    return optimizedValue.value
+  }
+
   if (discriminatorContext?.value?.mergedSchema) {
     return discriminatorContext.value.mergedSchema
   }
@@ -179,6 +184,73 @@ const displayPropertyHeading = (
 const handleDiscriminatorChange = (type: string) => {
   emit('update:modelValue', type)
 }
+
+/**
+ * Checks if array items have complex structure
+ * like: objects, references, discriminators, or compositions
+ */
+const hasComplexArrayItems = computed(() => {
+  const value = optimizedValue.value
+  if (!value?.items || typeof value.items !== 'object') {
+    return false
+  }
+
+  const items = value.items
+  return (
+    ('type' in items && ['object'].includes(items.type)) ||
+    '$ref' in items ||
+    'discriminator' in items ||
+    'allOf' in items ||
+    'oneOf' in items ||
+    'anyOf' in items
+  )
+})
+
+const shouldRenderArrayItemComposition = (composition: string): boolean => {
+  const value = optimizedValue.value
+  if (
+    !value?.items ||
+    typeof value.items !== 'object' ||
+    !(composition in value.items)
+  ) {
+    return false
+  }
+
+  return !hasComplexArrayItems.value
+}
+
+const shouldRenderArrayOfObjects = computed(() => hasComplexArrayItems.value)
+
+/**
+ * Determine if object properties should be displayed
+ * Handles both single type ('object') and array types (['object', 'null'])
+ */
+const shouldRenderObjectProperties = computed(() => {
+  if (!optimizedValue.value) {
+    return false
+  }
+
+  const value = optimizedValue.value
+  const isObjectType =
+    value.type === 'object' ||
+    (Array.isArray(value.type) && value.type.includes('object'))
+
+  const hasPropertiesToRender = value.properties || value.additionalProperties
+
+  return isObjectType && hasPropertiesToRender
+})
+
+const shouldShowEnumDescriptions = computed(() => {
+  if (!optimizedValue.value?.['x-enumDescriptions']) {
+    return false
+  }
+
+  const enumDescriptions = optimizedValue.value['x-enumDescriptions']
+
+  return (
+    typeof enumDescriptions === 'object' && !Array.isArray(enumDescriptions)
+  )
+})
 </script>
 <template>
   <component
@@ -236,9 +308,9 @@ const handleDiscriminatorChange = (type: string) => {
     </div>
     <!-- Enum -->
     <div
-      v-if="getEnumFromValue(optimizedValue)?.length > 0"
+      v-if="getEnumFromValue(optimizedValue)?.length > 0 && !isDiscriminator"
       class="property-enum">
-      <template v-if="Array.isArray(optimizedValue?.['x-enumDescriptions'])">
+      <template v-if="shouldShowEnumDescriptions">
         <div class="property-list">
           <div
             v-for="enumValue in getEnumFromValue(optimizedValue)"
@@ -251,7 +323,7 @@ const handleDiscriminatorChange = (type: string) => {
             </div>
             <div class="property-description">
               <ScalarMarkdown
-                :value="optimizedValue['x-enumDescriptions'][enumValue]" />
+                :value="optimizedValue?.['x-enumDescriptions']?.[enumValue]" />
             </div>
           </div>
         </div>
@@ -293,10 +365,7 @@ const handleDiscriminatorChange = (type: string) => {
     </div>
     <!-- Object -->
     <div
-      v-if="
-        optimizedValue?.type === 'object' &&
-        (optimizedValue?.properties || optimizedValue?.additionalProperties)
-      "
+      v-if="shouldRenderObjectProperties"
       class="children">
       <Schema
         :compact="compact"
@@ -314,15 +383,7 @@ const handleDiscriminatorChange = (type: string) => {
     <template
       v-if="optimizedValue?.items && typeof optimizedValue.items === 'object'">
       <div
-        v-if="
-          ('type' in optimizedValue.items &&
-            ['object'].includes(optimizedValue?.items?.type)) ||
-          '$ref' in optimizedValue.items ||
-          'discriminator' in optimizedValue.items ||
-          'allOf' in optimizedValue.items ||
-          'oneOf' in optimizedValue.items ||
-          'anyOf' in optimizedValue.items
-        "
+        v-if="shouldRenderArrayOfObjects"
         class="children">
         <Schema
           :compact="compact"
@@ -350,7 +411,16 @@ const handleDiscriminatorChange = (type: string) => {
       v-for="composition in compositions"
       :key="composition">
       <!-- Property composition -->
-      <template v-if="optimizedValue?.[composition]">
+      <template
+        v-if="
+          optimizedValue?.[composition] &&
+          !(
+            optimizedValue?.items &&
+            typeof composition === 'string' &&
+            typeof optimizedValue.items === 'object' &&
+            composition in optimizedValue.items
+          )
+        ">
         <SchemaComposition
           :compact="compact"
           :composition="composition"
@@ -364,13 +434,8 @@ const handleDiscriminatorChange = (type: string) => {
 
       <!-- Array item composition -->
       <template
-        v-else-if="
-          optimizedValue?.items &&
-          typeof composition === 'string' &&
-          typeof optimizedValue.items === 'object' &&
-          !('type' in optimizedValue.items) &&
-          composition in optimizedValue.items
-        ">
+        v-else-if="shouldRenderArrayItemComposition(composition)"
+        :key="composition">
         <SchemaComposition
           :compact="compact"
           :composition="composition"
@@ -379,7 +444,7 @@ const handleDiscriminatorChange = (type: string) => {
           :name="name"
           :noncollapsible="noncollapsible"
           :schemas="schemas"
-          :value="optimizedValue.items" />
+          :value="optimizedValue?.items" />
       </template>
     </template>
     <SchemaDiscriminator
@@ -399,6 +464,11 @@ const handleDiscriminatorChange = (type: string) => {
   padding: 8px;
   font-size: var(--scalar-mini);
   position: relative;
+}
+.property.property--level-0:has(
+    .property-rule .schema-properties.schema-properties-open > ul li.property
+  ) {
+  padding-top: 0;
 }
 /* increase z-index for example hovers */
 .property:hover {
