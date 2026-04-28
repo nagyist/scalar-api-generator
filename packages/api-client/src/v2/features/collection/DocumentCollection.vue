@@ -68,7 +68,12 @@ const documentSourceUrl = computed(
 const documentRegistryMeta = computed(
   () =>
     props.document?.['x-scalar-registry-meta'] as
-      | { namespace: string; slug: string }
+      | {
+          namespace: string
+          slug: string
+          version: string
+          commitHash?: string
+        }
       | undefined,
 )
 
@@ -142,7 +147,11 @@ const resolveSyncInput = async (): Promise<
   const registryMeta = documentRegistryMeta.value
   if (registryMeta && props.fetchRegistryDocument) {
     try {
-      const result = await props.fetchRegistryDocument(registryMeta)
+      const result = await props.fetchRegistryDocument({
+        namespace: registryMeta.namespace,
+        slug: registryMeta.slug,
+        version: registryMeta.version,
+      })
       if (!result.ok) {
         toast(result.error, 'error')
         return null

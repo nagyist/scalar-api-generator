@@ -46,6 +46,7 @@ import {
 } from '@/v2/features/app/hooks/use-sidebar-documents'
 import { DocumentSearchModal } from '@/v2/features/search'
 import { dragHandleFactory } from '@/v2/helpers/drag-handle-factory'
+import { safeRun } from '@/v2/helpers/safe-run'
 import type { ImportDocumentFromRegistry } from '@/v2/types/configuration'
 
 const {
@@ -132,7 +133,13 @@ const handleDocumentClick = async (item: SidebarDocumentItem) => {
     return
   }
 
-  if (!item.registry || !app.store.value) {
+  // Capture the narrowed values into locals so the closure passed to
+  // `safeRun` keeps the non-nullable types without needing assertions, and
+  // so a later mutation to `item.registry` or `app.store.value` cannot
+  // change what we end up loading mid-flight.
+  const { registry } = item
+  const workspaceStore = app.store.value
+  if (!registry || !workspaceStore) {
     console.warn('Document does not have a sidebar navigation, skipping...')
     return
   }
@@ -150,15 +157,40 @@ const handleDocumentClick = async (item: SidebarDocumentItem) => {
 
   loadingKeys.value[item.key] = true
 
-  const result = await loadRegistryDocument({
-    fetcher: fetchRegistryDocument,
-    workspaceStore: app.store.value,
-    namespace: item.registry.namespace,
-    slug: item.registry.slug,
-  })
+  // Registry items expose every version they advertise on `versions`, ordered
+  // with the latest first. Until we surface a version picker on the parent
+  // row we always load whichever version is at the top of the list, which is
+  // the latest one. Falling back to `undefined` lets the loader default to
+  // the registry's `latest` alias when the entry was synthesized from a
+  // workspace document that has no advertised versions yet.
+  const targetVersion = item.versions?.[0]
+
+  // The loader can throw on network errors or malformed payloads. `safeRun`
+  // converts a rejection into an `{ ok: false, error }` result so a single
+  // failure cannot leave the row's spinner running forever and block
+  // subsequent clicks on the same item.
+  const outcome = await safeRun(() =>
+    loadRegistryDocument({
+      fetcher: fetchRegistryDocument,
+      workspaceStore,
+      namespace: registry.namespace,
+      slug: registry.slug,
+      version: targetVersion?.version,
+      // Forward the registry-advertised hash from the version row. Storing it
+      // on the imported document lets us later detect when the registry has
+      // moved on and surface upstream changes.
+      commitHash: targetVersion?.registryCommitHash,
+    }),
+  )
 
   loadingKeys.value[item.key] = false
 
+  if (!outcome.ok) {
+    toast(outcome.error, 'error')
+    return
+  }
+
+  const result = outcome.data
   if (!result.ok) {
     toast(result.error, 'error')
     return
