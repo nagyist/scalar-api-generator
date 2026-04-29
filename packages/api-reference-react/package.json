@@ -48,6 +48,7 @@
     "@scalar/types": "workspace:*"
   },
   "devDependencies": {
+    "@scalar/helpers": "workspace:*",
     "@types/react": "catalog:*",
     "@types/react-dom": "catalog:*",
     "@vitejs/plugin-react": "catalog:*",
