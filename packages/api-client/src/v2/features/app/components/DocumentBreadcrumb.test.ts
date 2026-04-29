@@ -9,6 +9,19 @@ import { mockEventBus } from '@/v2/helpers/test-utils'
 
 import DocumentBreadcrumb from './DocumentBreadcrumb.vue'
 
+/**
+ * Helper to grab the version-picker combobox specifically. The workspace
+ * picker collapses into a plain link button while a document is active on
+ * the route, so when the version picker is rendered (registry-backed
+ * documents only) it is the only `ScalarCombobox` on the page. Centralising
+ * the lookup here keeps the intent obvious at every call site if that
+ * affordance ever changes again.
+ */
+const findVersionCombobox = (wrapper: ReturnType<typeof mount>) => {
+  const comboboxes = wrapper.findAllComponents({ name: 'ScalarCombobox' })
+  return comboboxes[0]
+}
+
 type FakeDocument = Partial<WorkspaceDocument> & {
   'x-scalar-registry-meta'?: {
     namespace: string
@@ -31,10 +44,22 @@ const createFakeApp = ({
   documents,
   activeDocumentName,
   isTeamWorkspace = true,
+  teamSlug = 'acme',
+  workspaceList = [
+    { id: 'ws-1', label: 'Acme Workspace', teamSlug: 'acme', slug: 'default' },
+    { id: 'ws-2', label: 'Marketing API', teamSlug: 'acme', slug: 'marketing' },
+  ],
 }: {
   documents: Record<string, FakeDocument>
   activeDocumentName?: string
   isTeamWorkspace?: boolean
+  teamSlug?: string
+  workspaceList?: Array<{
+    id: string
+    label: string
+    teamSlug: string
+    slug: string
+  }>
 }) => {
   const store = shallowRef({
     workspace: {
@@ -45,13 +70,34 @@ const createFakeApp = ({
     },
   })
 
+  // Build a single grouped picker entry from the workspace list. The
+  // breadcrumb does not care how the grouping is shaped (only that it is
+  // an array of `{ label?, options }`), so we keep this minimal.
+  const workspaceGroups = computed(() => [
+    {
+      label: isTeamWorkspace ? 'Team Workspaces' : 'Local Workspaces',
+      options: workspaceList.map((w) => ({ id: w.id, label: w.label })),
+    },
+  ])
+
   const app = {
     store,
     workspace: {
       isTeamWorkspace: computed(() => isTeamWorkspace),
       activeWorkspace: shallowRef({ id: 'ws-1', label: 'Acme Workspace' }),
+      // The new combobox in the breadcrumb pulls workspaces from these two
+      // accessors. Stubbing them with a small fixed list keeps the tests
+      // focused on breadcrumb rendering rather than workspace-state plumbing.
+      workspaceList: ref(workspaceList),
+      workspaceGroups,
     },
-    activeEntities: { documentSlug: ref(activeDocumentName) },
+    activeEntities: {
+      documentSlug: ref(activeDocumentName),
+      // The breadcrumb derives the literal "Team" / "Local" segment from
+      // `isTeamWorkspace`, but the team-slug context is still needed for
+      // the placeholder-workspace navigation path.
+      teamSlug: ref(isTeamWorkspace ? teamSlug : 'local'),
+    },
     eventBus: mockEventBus,
   } as unknown as AppState
 
@@ -76,6 +122,78 @@ const createWorkspaceStore = (documents: Record<string, FakeDocument>, activeDoc
   }) as unknown as WorkspaceStore
 
 describe('DocumentBreadcrumb', () => {
+  it('does not surface the "Team" / "Local" scope label inside the breadcrumb itself - the menu trigger owns it', () => {
+    // The scope label ("Team" / "Local") moved into the `ScalarMenu`
+    // trigger so the menu button reads as the leading breadcrumb segment.
+    // The breadcrumb component is responsible only for the segments to
+    // the right of the menu, starting with the workspace picker.
+    const { app } = createFakeApp({
+      documents: {
+        pets: { info: { title: 'Pets API', version: '1.0.0' } },
+      },
+      activeDocumentName: 'pets',
+      isTeamWorkspace: true,
+    })
+
+    const wrapper = mount(DocumentBreadcrumb, { props: { app } })
+
+    // The workspace label is the first user-visible text in the
+    // breadcrumb now, not "Team".
+    expect(wrapper.text()).toContain('Acme Workspace')
+    expect(wrapper.text()).not.toContain('Team')
+    expect(wrapper.text()).not.toContain('Local')
+  })
+
+  it('routes to the get-started page of the workspace selected in the combobox', async () => {
+    const { app } = createFakeApp({
+      documents: {
+        pets: { info: { title: 'Pets API', version: '1.0.0' } },
+      },
+      activeDocumentName: undefined,
+      isTeamWorkspace: true,
+    })
+
+    const wrapper = mount(DocumentBreadcrumb, { props: { app } })
+    vi.mocked(mockEventBus.emit).mockClear()
+
+    const comboboxes = wrapper.findAllComponents({ name: 'ScalarCombobox' })
+    await comboboxes[0]!.vm.$emit('update:modelValue', {
+      id: 'ws-2',
+      label: 'Marketing API',
+    })
+
+    expect(mockEventBus.emit).toHaveBeenCalledWith('ui:navigate', {
+      page: 'workspace',
+      path: 'get-started',
+      teamSlug: 'acme',
+      workspaceSlug: 'marketing',
+    })
+  })
+
+  it('emits `createWorkspace` when the picker `+` affordance is invoked', () => {
+    // `activeDocumentName` is left unset so the workspace picker is in
+    // its dropdown form (the link form, used while inside a document, has
+    // no `+` affordance).
+    const { app } = createFakeApp({
+      documents: {
+        pets: { info: { title: 'Pets API', version: '1.0.0' } },
+      },
+      activeDocumentName: undefined,
+      isTeamWorkspace: true,
+    })
+
+    const wrapper = mount(DocumentBreadcrumb, { props: { app } })
+
+    const workspaceCombobox = wrapper.findAllComponents({
+      name: 'ScalarCombobox',
+    })[0]!
+    workspaceCombobox.vm.$emit('add')
+
+    // The breadcrumb does not own the create-workspace modal; the parent
+    // does. We verify the event reaches the parent so the modal can open.
+    expect(wrapper.emitted('createWorkspace')).toEqual([[]])
+  })
+
   it('renders only the workspace segment when no document is active on the route', () => {
     const { app } = createFakeApp({
       documents: {
@@ -205,7 +323,7 @@ describe('DocumentBreadcrumb', () => {
 
     // Direct event emission bypasses HeadlessUI's popover internals while
     // still exercising the same handler the component uses in production.
-    await wrapper.findComponent({ name: 'ScalarCombobox' }).vm.$emit('update:modelValue', {
+    await findVersionCombobox(wrapper)!.vm.$emit('update:modelValue', {
       id: 'pets-v2',
       label: '2.0.0',
       isLatest: true,
@@ -267,7 +385,7 @@ describe('DocumentBreadcrumb', () => {
 
     vi.mocked(mockEventBus.emit).mockClear()
 
-    await wrapper.findComponent({ name: 'ScalarCombobox' }).vm.$emit('update:modelValue', {
+    await findVersionCombobox(wrapper)!.vm.$emit('update:modelValue', {
       // Unloaded versions use the synthesized key so the combobox option id
       // lines up with `SidebarDocumentVersion.key`.
       id: '@acme/pets@2.0.0',
@@ -322,7 +440,7 @@ describe('DocumentBreadcrumb', () => {
 
     vi.mocked(mockEventBus.emit).mockClear()
 
-    await wrapper.findComponent({ name: 'ScalarCombobox' }).vm.$emit('update:modelValue', {
+    await findVersionCombobox(wrapper)!.vm.$emit('update:modelValue', {
       id: 'pets-v1',
       label: '1.0.0',
       isLatest: true,
@@ -390,7 +508,7 @@ describe('DocumentBreadcrumb', () => {
       },
     })
 
-    const options = wrapper.findComponent({ name: 'ScalarCombobox' }).props('options') as Array<{
+    const options = findVersionCombobox(wrapper)!.props('options') as Array<{
       id: string
       status: string
     }>
@@ -473,10 +591,12 @@ describe('DocumentBreadcrumb', () => {
 
     const wrapper = mount(DocumentBreadcrumb, { props: { app } })
 
-    // Local documents have no version picker, and the "New Version"
-    // affordance lives inside the picker's dropdown - so it should be gone
-    // entirely for local documents.
-    expect(wrapper.findComponent({ name: 'ScalarCombobox' }).exists()).toBe(false)
+    // While inside a document the workspace picker collapses into a plain
+    // link button, and the version picker is registry-only. A local
+    // document therefore renders neither combobox - asserting on zero
+    // here is the strongest possible guard against either picker leaking
+    // back in for local documents.
+    expect(wrapper.findAllComponents({ name: 'ScalarCombobox' })).toHaveLength(0)
   })
 
   it('renders the version picker with a create-version slot for registry-backed documents', () => {
@@ -514,9 +634,9 @@ describe('DocumentBreadcrumb', () => {
     // The combobox's `add` slot is what renders the "New Version" row in
     // the dropdown. We verify the slot was provided rather than asserting on
     // the rendered popover, which is teleported and only mounted when open.
-    const combobox = wrapper.findComponent({ name: 'ScalarCombobox' })
-    expect(combobox.exists()).toBe(true)
-    expect(combobox.vm.$slots.add).toBeDefined()
+    const combobox = findVersionCombobox(wrapper)
+    expect(combobox?.exists()).toBe(true)
+    expect(combobox?.vm.$slots.add).toBeDefined()
   })
 
   it('creates a draft document with no commit hash and navigates to it on submit', async () => {
@@ -577,7 +697,7 @@ describe('DocumentBreadcrumb', () => {
     // The "New Version" row is rendered through the combobox's `add` slot.
     // We bypass the teleported popover and emit the same event the slot
     // would, mirroring how the version-select test drives the picker.
-    wrapper.findComponent({ name: 'ScalarCombobox' }).vm.$emit('add')
+    findVersionCombobox(wrapper)!.vm.$emit('add')
     await flushPromises()
 
     // The modal teleports outside the wrapper, so reach into the document

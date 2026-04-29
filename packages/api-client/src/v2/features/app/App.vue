@@ -9,14 +9,12 @@ export default {}
 
 <script setup lang="ts">
 import {
-  ScalarMenuWorkspacePicker,
   ScalarTeleportRoot,
   useModal,
   type ModalState,
 } from '@scalar/components'
 import type { ClientPlugin } from '@scalar/oas-utils/helpers'
 import { ScalarToasts } from '@scalar/use-toasts'
-import { getWorkspaceId } from '@scalar/workspace-store/persistence'
 import { extensions } from '@scalar/workspace-store/schemas/extensions'
 import { computed, onBeforeUnmount, toValue, watch } from 'vue'
 import { RouterView } from 'vue-router'
@@ -39,11 +37,7 @@ import { useGlobalHotKeys } from '@/v2/hooks/use-global-hot-keys'
 import type { ImportDocumentFromRegistry } from '@/v2/types/configuration'
 import type { ClientLayout } from '@/v2/types/layout'
 
-import {
-  DEFAULT_TEAM_WORKSPACE_SLUG,
-  TEAM_WORKSPACES_ENABLED,
-  type AppState,
-} from './app-state'
+import type { AppState } from './app-state'
 import DesktopTabs from './components/DesktopTabs.vue'
 
 const {
@@ -74,12 +68,34 @@ defineSlots<{
    */
   'create-workspace'?: (payload: { state: ModalState }) => unknown
   /**
+   * Replaces the Scalar logo inside the header menu button. Typically used by
+   * team-aware consumers (e.g. Scalar Cloud) to render a team avatar so the
+   * left-most chrome reads as "this team's workspace" rather than the
+   * generic Scalar wordmark.
+   *
+   * Receives `isTeamWorkspace` so consumers can opt into rendering a team
+   * image only when the active workspace actually belongs to a team, while
+   * keeping the default Scalar logo for local workspaces.
+   */
+  'header-logo'?: (payload: { isTeamWorkspace: boolean }) => unknown
+  /**
    * Slot for customizing the menu items section of the app header.
    * Defaults to a workspace picker bound to the current app state. Overriding this slot
    * replaces the default picker entirely, so the consumer is responsible for rendering
    * any workspace switcher (or other menu content) they need.
    */
   'header-menu-items'?: () => unknown
+  /**
+   * Slot rendered at the trailing edge of the header, immediately before the
+   * `header-end` slot. Use this for context-specific action buttons (for
+   * example a "Save" button) so they sit next to the document chrome rather
+   * than getting mixed in with the user / account controls in `header-end`.
+   *
+   * When both this slot and `header-end` are provided, a vertical divider is
+   * inserted between them so the two groups read as visually distinct
+   * clusters.
+   */
+  'header-actions'?: () => unknown
   /**
    * Slot for customizing the end section of the app header.
    * Typically used for user menus, action buttons, or other trailing controls.
@@ -156,51 +172,6 @@ useMonacoEditorConfiguration({
   darkMode: isDarkMode,
 })
 
-const navigateToWorkspaceOverview = (teamSlug?: string, slug?: string) => {
-  app.eventBus.emit('ui:navigate', {
-    page: 'workspace',
-    path: 'environment',
-    teamSlug,
-    workspaceSlug: slug,
-  })
-}
-
-/**
- * Navigates to the workspace identified by the picker option id.
- *
- * Real workspaces are resolved by looking up the option in `workspaceList`,
- * which sidesteps any ambiguity if a teamSlug or slug were ever to contain a
- * slash. When team workspaces are enabled, the picker may also surface a
- * placeholder default team workspace for the active non-local team when no
- * real workspace exists yet; that placeholder is matched by exact id and
- * routed through the normal navigation flow so the route handler can create
- * it on demand.
- */
-const setActiveWorkspace = (id?: string) => {
-  if (!id) {
-    return
-  }
-
-  const workspace = app.workspace.workspaceList.value?.find((w) => w.id === id)
-  if (workspace) {
-    navigateToWorkspaceOverview(workspace.teamSlug, workspace.slug)
-    return
-  }
-
-  if (!TEAM_WORKSPACES_ENABLED) {
-    return
-  }
-
-  const activeTeamSlug = app.activeEntities.teamSlug.value
-  if (
-    activeTeamSlug &&
-    activeTeamSlug !== 'local' &&
-    id === getWorkspaceId(activeTeamSlug, DEFAULT_TEAM_WORKSPACE_SLUG)
-  ) {
-    navigateToWorkspaceOverview(activeTeamSlug, DEFAULT_TEAM_WORKSPACE_SLUG)
-  }
-}
-
 const createWorkspaceModalState = useModal()
 
 /** Props to pass to the RouterView component. */
@@ -252,26 +223,42 @@ const routerViewProps = computed<RouteProps>(() => {
           class="absolute z-60 md:hidden"
           :class="layout === 'desktop' ? 'top-14 left-4' : 'top-4 left-4'" />
         <AppHeader
+          :menuTitle="app.workspace.isTeamWorkspace.value ? 'Team' : 'Local'"
           @navigate:to:settings="
             app.eventBus.emit('ui:navigate', {
               page: 'workspace',
               path: 'settings',
             })
           ">
+          <!--
+            Only forward the consumer-provided logo (typically a team
+            avatar from Scalar Cloud) while the user is actually inside a
+            team workspace. Outside of a team context the avatar would be
+            misleading, so we omit the `#logo` template entirely and let
+            `ScalarMenuButton` fall back to its default Scalar wordmark.
+          -->
+          <template
+            v-if="$slots['header-logo'] && app.workspace.isTeamWorkspace.value"
+            #logo>
+            <slot
+              :isTeamWorkspace="app.workspace.isTeamWorkspace.value"
+              name="header-logo" />
+          </template>
           <template #menuItems>
-            <slot name="header-menu-items">
-              <ScalarMenuWorkspacePicker
-                :modelValue="app.workspace.activeWorkspace.value?.id"
-                :workspaceOptions="app.workspace.workspaceGroups.value"
-                @createWorkspace="createWorkspaceModalState.show()"
-                @update:modelValue="(value) => setActiveWorkspace(value)" />
-            </slot>
+            <!--
+              The workspace picker used to live here as a submenu. It is now
+              surfaced inline in the breadcrumb so the user reaches it in a
+              single click. Consumers that want extra menu rows can still
+              inject them through the `header-menu-items` slot.
+            -->
+            <slot name="header-menu-items" />
           </template>
           <template #breadcrumb>
             <DocumentBreadcrumb
               :app="app"
               :fetchRegistryDocument="fetchRegistryDocument"
-              :registryDocuments="registryDocuments" />
+              :registryDocuments="registryDocuments"
+              @createWorkspace="createWorkspaceModalState.show()" />
           </template>
           <template #end>
             <div class="flex items-center gap-2">
@@ -279,13 +266,32 @@ const routerViewProps = computed<RouteProps>(() => {
                 Sync status mirrors the icon in the version picker so the
                 user can see at a glance whether the active registry-backed
                 document is synced / pending push / pending pull / in
-                conflict, even when the picker dropdown is closed. The
-                indicator hides itself when there is no active version.
+                conflict, even when the picker dropdown is closed. We only
+                mount it while a document is actually active on the route -
+                on workspace-level pages (settings, get-started, etc.)
+                there is nothing to sync, and an indicator there would just
+                be noise.
               -->
               <DocumentSyncIndicator
+                v-if="app.activeEntities.documentSlug.value"
                 :app="app"
                 :registryDocuments="registryDocuments" />
-              <slot name="header-end" />
+              <slot
+                v-if="$slots['header-actions']"
+                name="header-actions" />
+              <!--
+                Vertical divider between the two trailing slot clusters.
+                Only rendered when both `header-actions` and `header-end`
+                are provided, so consumers using just one of the slots do
+                not get an orphaned separator.
+              -->
+              <span
+                v-if="$slots['header-actions'] && $slots['header-end']"
+                aria-hidden="true"
+                class="bg-border h-4 w-px shrink-0" />
+              <slot
+                v-if="$slots['header-end']"
+                name="header-end" />
             </div>
           </template>
         </AppHeader>
