@@ -1,3 +1,4 @@
 {
-  "install": "npm install -g pnpm && pnpm install"
+  "baseImage": "ghcr.io/cursor-images/node-24:latest",
+  "install": "curl -fsSL https://github.com/pnpm/pnpm/releases/download/v10.16.1/pnpm-linux-x64 -o /usr/local/bin/pnpm && chmod +x /usr/local/bin/pnpm && pnpm install && pnpm build:packages"
 }
