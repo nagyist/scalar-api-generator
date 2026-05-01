@@ -9,6 +9,7 @@ export default {}
 
 <script setup lang="ts">
 import {
+  ScalarModal,
   ScalarTeleportRoot,
   useModal,
   type ModalState,
@@ -21,20 +22,25 @@ import { RouterView } from 'vue-router'
 
 import { SidebarToggle } from '@/v2/components/sidebar'
 import AppHeader from '@/v2/features/app/components/AppHeader.vue'
+import AppHeaderActions from '@/v2/features/app/components/AppHeaderActions.vue'
 import AppSidebar from '@/v2/features/app/components/AppSidebar.vue'
 import CreateWorkspaceModal from '@/v2/features/app/components/CreateWorkspaceModal.vue'
 import DocumentBreadcrumb from '@/v2/features/app/components/DocumentBreadcrumb.vue'
-import DocumentSyncIndicator from '@/v2/features/app/components/DocumentSyncIndicator.vue'
+import PublishDocumentModal from '@/v2/features/app/components/PublishDocumentModal.vue'
 import SplashScreen from '@/v2/features/app/components/SplashScreen.vue'
+import SyncConflictResolutionEditor from '@/v2/features/app/components/SyncConflictResolutionEditor.vue'
 import type { RouteProps } from '@/v2/features/app/helpers/routes'
+import { useDocumentSync } from '@/v2/features/app/hooks/use-document-sync'
 import { useDocumentWatcher } from '@/v2/features/app/hooks/use-document-watcher'
-import type { RegistryDocumentsState } from '@/v2/features/app/hooks/use-sidebar-documents'
 import type { CommandPaletteState } from '@/v2/features/command-palette/hooks/use-command-palette-state'
 import TheCommandPalette from '@/v2/features/command-palette/TheCommandPalette.vue'
 import { useMonacoEditorConfiguration } from '@/v2/features/editor'
 import { useColorMode } from '@/v2/hooks/use-color-mode'
 import { useGlobalHotKeys } from '@/v2/hooks/use-global-hot-keys'
-import type { ImportDocumentFromRegistry } from '@/v2/types/configuration'
+import type {
+  RegistryAdapter,
+  RegistryDocumentsState,
+} from '@/v2/types/configuration'
 import type { ClientLayout } from '@/v2/types/layout'
 
 import type { AppState } from './app-state'
@@ -45,21 +51,32 @@ const {
   plugins = [],
   getAppState,
   getCommandPaletteState,
-  fetchRegistryDocument,
-  registryDocuments = { status: 'success', documents: [] },
+  registry,
 } = defineProps<{
   layout: Exclude<ClientLayout, 'modal'>
   plugins?: ClientPlugin[]
   getAppState: () => AppState
   getCommandPaletteState: () => CommandPaletteState
-  /** Fetches the full document from registry by meta. Passed through to route props for sync. */
-  fetchRegistryDocument?: ImportDocumentFromRegistry
   /**
-   * The list of all available registry documents, with a loading status so the
-   * sidebar can render skeleton placeholders until the real list is ready.
+   * Adapter wiring the API client up to an external registry (Scalar
+   * Cloud or a custom self-hosted setup). The adapter itself is optional
+   * - omit it to opt out of registry features entirely - but every
+   * field on it (`documents`, `namespaces`, `fetchDocument`,
+   * `publishDocument`, `publishVersion`) is required when provided so
+   * the client can rely on the full surface.
    */
-  registryDocuments?: RegistryDocumentsState
+  registry?: RegistryAdapter
 }>()
+
+/**
+ * Reactive view of the registry documents list with a sane default for
+ * setups that did not wire an adapter up. The sidebar and breadcrumb
+ * read this getter so they keep rendering skeletons / empty states even
+ * when the host application has not provided a `registry` prop.
+ */
+const registryDocuments = computed<RegistryDocumentsState>(
+  () => registry?.documents ?? { status: 'success', documents: [] },
+)
 
 defineSlots<{
   /**
@@ -174,6 +191,40 @@ useMonacoEditorConfiguration({
 
 const createWorkspaceModalState = useModal()
 
+/**
+ * Owns the document-level Save / Revert / Pull / Push / Publish flow.
+ * Keeping it in a dedicated hook leaves this component focused on
+ * routing, layout, and slot composition.
+ */
+const {
+  showLocalSaveActions,
+  showTeamSyncActions,
+  showTeamPublishAction,
+  hasHeaderActionCluster,
+  isActiveDocumentDirty,
+  isOffline,
+  canPullActiveDocument,
+  canPushActiveDocument,
+  publishDocumentModalState,
+  syncConflictModalState,
+  pendingPullState,
+  publishDefaultSlug,
+  publishDefaultVersion,
+  registryNamespaces,
+  handleSaveDocument,
+  handleRevertDocument,
+  handlePullDocument,
+  handlePushDocument,
+  handlePublishDocument,
+  handlePublishDocumentSubmit,
+  handleSyncConflictApplyChanges,
+  handleSyncConflictModalClose,
+} = useDocumentSync({
+  app,
+  registry,
+  registryDocuments: () => registryDocuments.value,
+})
+
 /** Props to pass to the RouterView component. */
 const routerViewProps = computed<RouteProps>(() => {
   return {
@@ -182,7 +233,7 @@ const routerViewProps = computed<RouteProps>(() => {
     environment: app.environment.value,
     eventBus: app.eventBus,
     exampleName: app.activeEntities.exampleName.value,
-    fetchRegistryDocument,
+    fetchRegistryDocument: registry?.fetchDocument,
     layout,
     method: app.activeEntities.method.value,
     path: app.activeEntities.path.value,
@@ -256,37 +307,53 @@ const routerViewProps = computed<RouteProps>(() => {
           <template #breadcrumb>
             <DocumentBreadcrumb
               :app="app"
-              :fetchRegistryDocument="fetchRegistryDocument"
+              :fetchRegistryDocument="registry?.fetchDocument"
               :registryDocuments="registryDocuments"
               @createWorkspace="createWorkspaceModalState.show()" />
           </template>
-          <template #end>
+          <!--
+            Only forward the trailing `#end` cluster when it has actual
+            content. The action clusters and the consumer slots all gate
+            independently, so we mirror those conditions on the wrapper to
+            avoid mounting an empty cluster that would otherwise leak a
+            stray divider.
+          -->
+          <template
+            v-if="
+              hasHeaderActionCluster ||
+              $slots['header-actions'] ||
+              $slots['header-end']
+            "
+            #end>
             <div class="flex items-center gap-2">
-              <!--
-                Sync status mirrors the icon in the version picker so the
-                user can see at a glance whether the active registry-backed
-                document is synced / pending push / pending pull / in
-                conflict, even when the picker dropdown is closed. We only
-                mount it while a document is actually active on the route -
-                on workspace-level pages (settings, get-started, etc.)
-                there is nothing to sync, and an indicator there would just
-                be noise.
-              -->
-              <DocumentSyncIndicator
-                v-if="app.activeEntities.documentSlug.value"
-                :app="app"
-                :registryDocuments="registryDocuments" />
+              <AppHeaderActions
+                :canPullActiveDocument="canPullActiveDocument"
+                :canPushActiveDocument="canPushActiveDocument"
+                :isActiveDocumentDirty="isActiveDocumentDirty"
+                :isOffline="isOffline"
+                :showLocalSaveActions="showLocalSaveActions"
+                :showTeamPublishAction="showTeamPublishAction"
+                :showTeamSyncActions="showTeamSyncActions"
+                @publish="handlePublishDocument"
+                @pull="handlePullDocument"
+                @push="handlePushDocument"
+                @revert="handleRevertDocument"
+                @save="handleSaveDocument" />
               <slot
                 v-if="$slots['header-actions']"
                 name="header-actions" />
               <!--
-                Vertical divider between the two trailing slot clusters.
-                Only rendered when both `header-actions` and `header-end`
-                are provided, so consumers using just one of the slots do
-                not get an orphaned separator.
+                Vertical divider between the document-scoped action cluster
+                (workspace-mode buttons + `header-actions`) and the trailing
+                `header-end` cluster. Only rendered when both sides have
+                content so single-cluster headers do not get an orphaned
+                separator.
               -->
               <span
-                v-if="$slots['header-actions'] && $slots['header-end']"
+                v-if="
+                  (hasHeaderActionCluster || $slots['header-actions']) &&
+                  $slots['header-end']
+                "
                 aria-hidden="true"
                 class="bg-border h-4 w-px shrink-0" />
               <slot
@@ -299,7 +366,7 @@ const routerViewProps = computed<RouteProps>(() => {
           <!-- App sidebar -->
           <AppSidebar
             :app="app"
-            :fetchRegistryDocument="fetchRegistryDocument"
+            :fetchRegistryDocument="registry?.fetchDocument"
             :registryDocuments="registryDocuments"
             :sidebarWidth="app.sidebar.width.value"
             @update:sidebarWidth="app.sidebar.handleSidebarWidthUpdate" />
@@ -328,6 +395,41 @@ const routerViewProps = computed<RouteProps>(() => {
           :state="createWorkspaceModalState"
           @create:workspace="(payload) => app.workspace.create(payload)" />
       </slot>
+      <!--
+        First-time publish modal. Only mounted when a registry adapter
+        is wired up - without one there is nothing meaningful to send,
+        and the modal would never be opened anyway.
+      -->
+      <PublishDocumentModal
+        v-if="registry"
+        :defaultSlug="publishDefaultSlug"
+        :defaultVersion="publishDefaultVersion"
+        :namespaces="registryNamespaces"
+        :state="publishDocumentModalState"
+        @submit="handlePublishDocumentSubmit" />
+      <!--
+        Three-way merge editor for the Pull flow. We mount it lazily on
+        `pendingPullState` so the heavy Monaco editors only spin up when
+        a pull actually has conflicts to walk through. The full-size
+        layout mirrors `DocumentCollection.vue`'s sync modal so the
+        editor has enough room to render the local / remote / result
+        panes side-by-side.
+      -->
+      <ScalarModal
+        v-if="pendingPullState"
+        bodyClass="sync-conflict-modal-root flex h-dvh flex-col p-4"
+        maxWidth="calc(100dvw - 32px)"
+        size="full"
+        :state="syncConflictModalState"
+        @close="handleSyncConflictModalClose">
+        <div class="flex h-full w-full flex-col gap-4 overflow-hidden">
+          <SyncConflictResolutionEditor
+            :baseDocument="pendingPullState.rebaseResult.originalDocument"
+            :conflicts="pendingPullState.rebaseResult.conflicts"
+            :resolvedDocument="pendingPullState.rebaseResult.resolvedDocument"
+            @applyChanges="handleSyncConflictApplyChanges" />
+        </div>
+      </ScalarModal>
       <!-- Popup command palette to add resources from anywhere -->
       <TheCommandPalette
         :eventBus="app.eventBus"
@@ -348,5 +450,22 @@ const routerViewProps = computed<RouteProps>(() => {
 }
 .dark-mode #scalar-client {
   background-color: color-mix(in srgb, var(--scalar-background-1) 65%, black);
+}
+
+/*
+ * The three-way merge editor needs the full viewport to fit its three
+ * Monaco panes. `DocumentCollection.vue` ships the same override for
+ * its in-page Sync modal, but the pull flow can run without that view
+ * being mounted, so we duplicate the rule here to keep the modal
+ * full-bleed.
+ */
+.full-size-styles:has(.sync-conflict-modal-root) {
+  width: 100dvw !important;
+  max-width: 100dvw !important;
+  border-right: none !important;
+}
+
+.full-size-styles:has(.sync-conflict-modal-root)::after {
+  display: none;
 }
 </style>
