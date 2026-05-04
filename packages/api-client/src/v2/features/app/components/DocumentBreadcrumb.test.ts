@@ -90,6 +90,21 @@ const createFakeApp = ({
       // focused on breadcrumb rendering rather than workspace-state plumbing.
       workspaceList: ref(workspaceList),
       workspaceGroups,
+      // Test-double for the shared navigation helper. The real
+      // implementation lives in `app-state.ts` and emits `ui:navigate`
+      // through the event bus, so we mirror that here so the existing
+      // event-bus assertions still cover this code path.
+      navigateToWorkspaceGetStarted: (workspaceId: string) => {
+        const found = workspaceList.find((w) => w.id === workspaceId)
+        if (found) {
+          mockEventBus.emit('ui:navigate', {
+            page: 'workspace',
+            path: 'get-started',
+            teamSlug: found.teamSlug,
+            workspaceSlug: found.slug,
+          })
+        }
+      },
     },
     activeEntities: {
       documentSlug: ref(activeDocumentName),
@@ -359,9 +374,11 @@ describe('DocumentBreadcrumb', () => {
     const fetchRegistryDocument = vi.fn().mockResolvedValue({
       ok: true,
       data: {
-        openapi: '3.1.0',
-        info: { title: 'Pets v2', version: '2.0.0' },
-        paths: {},
+        document: {
+          openapi: '3.1.0',
+          info: { title: 'Pets v2', version: '2.0.0' },
+          paths: {},
+        },
       },
     })
 
@@ -546,7 +563,7 @@ describe('DocumentBreadcrumb', () => {
 
     const fetchRegistryDocument = vi.fn().mockResolvedValue({
       ok: true,
-      data: { info: { title: 'Pets v1 Remote', version: '1.0.0' } },
+      data: { document: { info: { title: 'Pets v1 Remote', version: '1.0.0' } } },
     })
 
     mount(DocumentBreadcrumb, {

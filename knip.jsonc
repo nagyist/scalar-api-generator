@@ -23,9 +23,7 @@
     "documentation/assets/apollo.js",
     "documentation/assets/vector.js",
     "documentation/assets/brand.js",
-    "documentation/assets/enterprise-contact-form.js",
-    // Generated Docusaurus build directory
-    "integrations/docusaurus/playground/.docusaurus/**"
+    "documentation/assets/enterprise-contact-form.js"
   ],
   "ignore": [
     // We will use this in the future, just removed it from the workspace store for now
@@ -360,6 +358,34 @@
       ],
       "ignoreDependencies": [
         "@scalar/api-client" // referenced in /src/runtime/components/nuxt-theme.css
+      ]
+    },
+    "projects/scalar-app": {
+      "ignoreDependencies": [
+        // Used as a Vite worker string reference ('monaco-yaml/yaml.worker'), not an ES import
+        "monaco-yaml",
+        // Used as a Vite/Vitest alias target, not imported directly
+        "posthog-js"
+      ],
+      "typescript": {
+        "config": ["tsconfig.web.json", "tsconfig.node.json"]
+      },
+      "paths": {
+        "@/*": ["./src/*"],
+        "@electron/*": ["./entrypoints/electron/*"],
+        "@web/*": ["./entrypoints/web/src/*"]
+      },
+      "entry": [
+        // Web app
+        "entrypoints/web/src/main.ts",
+        // Electron main process
+        "entrypoints/electron/main/index.ts",
+        // Electron preload script
+        "entrypoints/electron/preload/index.ts",
+        // Electron renderer
+        "entrypoints/electron/renderer/src/main.ts",
+        // Vite configs
+        "electron.vite.config.ts"
       ]
     },
     "integrations/sveltekit": {

@@ -382,6 +382,7 @@
     "tailwindcss": "catalog:*",
     "vite": "catalog:*",
     "vite-svg-loader": "catalog:*",
-    "vitest": "catalog:*"
+    "vitest": "catalog:*",
+    "@scalar/sdk": "catalog:*"
   }
 }

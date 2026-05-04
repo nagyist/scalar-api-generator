@@ -5,6 +5,7 @@ import type { HttpMethod } from '@scalar/helpers/http/http-methods'
 import { slugify } from '@scalar/helpers/string/slugify'
 import type { LoaderPlugin } from '@scalar/json-magic/bundle'
 import { migrateLocalStorageToIndexDb } from '@scalar/oas-utils/migrations'
+import type { Team } from '@scalar/sdk/models/components'
 import { createSidebarState, generateReverseIndex } from '@scalar/sidebar'
 import type { Theme } from '@scalar/themes'
 import { type WorkspaceStore, createWorkspaceStore } from '@scalar/workspace-store/client'
@@ -32,6 +33,7 @@ import {
   readonly,
   ref,
   shallowRef,
+  toValue,
   watch,
 } from 'vue'
 import type { RouteLocationNormalizedGeneric, RouteLocationRaw, Router } from 'vue-router'
@@ -111,6 +113,12 @@ export type AppState = {
     activeWorkspace: ShallowRef<{ id: string; label: string } | null>
     /** Navigates to the specified workspace */
     navigateToWorkspace: (teamSlug?: string, slug?: string) => Promise<void>
+    /**
+     * Routes to the get-started page of a workspace identified by id.
+     * Mirrors the picker affordances in the breadcrumb and header menu
+     * so both surfaces stay in sync when the user switches workspaces.
+     */
+    navigateToWorkspaceGetStarted: (workspaceId: string) => void
     /** Whether the workspace page is open */
     isOpen: ComputedRef<boolean>
     /**
@@ -144,8 +152,6 @@ export type AppState = {
     exampleName: Ref<string | undefined>
     /** The slug of the selected team context (read-only; use setTeamSlug to change) */
     teamSlug: Readonly<Ref<string>>
-    /** Sets the current team context by team slug */
-    setTeamSlug: (value: string) => void
   }
   /** The currently active environment */
   environment: ComputedRef<XScalarEnvironment>
@@ -173,7 +179,7 @@ const DEFAULT_DEBOUNCE_DELAY = 1000
 /** Default sidebar width in pixels. */
 const DEFAULT_SIDEBAR_WIDTH = 288
 /** Default slug used when auto-creating a team workspace on demand. */
-export const DEFAULT_TEAM_WORKSPACE_SLUG = 'default'
+const DEFAULT_TEAM_WORKSPACE_SLUG = 'default'
 /** Default display name used when auto-creating a team workspace on demand. */
 const DEFAULT_TEAM_WORKSPACE_NAME = 'Workspace'
 /**
@@ -184,7 +190,7 @@ const DEFAULT_TEAM_WORKSPACE_NAME = 'Workspace'
  * workspaces. Existing team workspaces remain in storage and can be restored
  * by flipping this flag back to `true`.
  */
-export const TEAM_WORKSPACES_ENABLED = false
+const TEAM_WORKSPACES_ENABLED = false
 
 // ---------------------------------------------------------------------------
 // App State
@@ -192,6 +198,7 @@ export const TEAM_WORKSPACES_ENABLED = false
 export const createAppState = async ({
   router,
   fileLoader,
+  currentTeam,
   fallbackThemeSlug = () => 'default',
   customThemes = () => [],
   telemetryDefault,
@@ -199,6 +206,8 @@ export const createAppState = async ({
 }: {
   router: Router
   fileLoader?: LoaderPlugin
+  /** The currently active team */
+  currentTeam?: MaybeRefOrGetter<Team | undefined>
   customThemes?: MaybeRefOrGetter<Theme[]>
   fallbackThemeSlug?: MaybeRefOrGetter<string>
   telemetryDefault?: boolean
@@ -221,8 +230,8 @@ export const createAppState = async ({
   // ---------------------------------------------------------------------------
   // Active entities
   // ---------------------------------------------------------------------------
-  // Currently selected team context. Drives workspace filtering and team switching.
-  const teamSlug = ref<string>('local')
+  const teamSlug = computed(() => toValue(currentTeam)?.slug ?? 'local')
+
   // Team slug parsed from the current URL (the `@teamSlug` segment). Stays in sync with the route.
   const routeTeamSlug = ref<string | undefined>(undefined)
   const workspaceSlug = ref<string | undefined>(undefined)
@@ -463,6 +472,51 @@ export const createAppState = async ({
   }
 
   /**
+   * Routes to the get-started page of a workspace identified by id.
+   *
+   * Get-started is the right landing surface on a workspace switch
+   * because the user has effectively arrived at a fresh workspace and
+   * may not have any documents loaded yet. We look the workspace up
+   * against the unfiltered `workspaces` list so callers can switch into
+   * a workspace that is not visible under the current team filter.
+   *
+   * When team workspaces are enabled and the active team has no real
+   * workspace yet, the picker may surface a synthetic placeholder option
+   * (id: `getWorkspaceId(teamSlug, DEFAULT_TEAM_WORKSPACE_SLUG)`). We
+   * route that through the normal navigation flow so the route handler
+   * can create the workspace on demand.
+   */
+  const navigateToWorkspaceGetStarted = (workspaceId: string): void => {
+    const emitNavigation = (target: string, slug: string) => {
+      eventBus.emit('ui:navigate', {
+        page: 'workspace',
+        path: 'get-started',
+        teamSlug: target,
+        workspaceSlug: slug,
+      })
+    }
+
+    const workspace = workspaces.value?.find((w) => w.id === workspaceId)
+    if (workspace) {
+      emitNavigation(workspace.teamSlug, workspace.slug)
+      return
+    }
+
+    if (!TEAM_WORKSPACES_ENABLED) {
+      return
+    }
+
+    const activeTeamSlug = teamSlug.value
+    if (
+      activeTeamSlug &&
+      activeTeamSlug !== 'local' &&
+      workspaceId === getWorkspaceId(activeTeamSlug, DEFAULT_TEAM_WORKSPACE_SLUG)
+    ) {
+      emitNavigation(activeTeamSlug, DEFAULT_TEAM_WORKSPACE_SLUG)
+    }
+  }
+
+  /**
    * Creates a new workspace with the provided name.
    * - Generates a unique slug for the workspace (uses the provided slug if it is unique, otherwise generates a unique slug).
    * - Adds a default blank document ("drafts") to the workspace.
@@ -615,28 +669,6 @@ export const createAppState = async ({
 
     // Must reset the sidebar state when the workspace changes
     sidebarState.reset()
-  }
-
-  /**
-   * Sets the current team context. If the active workspace is not accessible
-   * with the new team, navigates to the default workspace for that team.
-   */
-  const setTeamSlug = (value: string) => {
-    // Update the active team slug.
-    teamSlug.value = value
-
-    // Find the workspace that matches the current route.
-    const workspace = filteredWorkspaces.value.find(
-      (w) => w.teamSlug === routeTeamSlug.value && w.slug === workspaceSlug.value,
-    )
-
-    // Check if the new team slug is accessible to the current workspace.
-    if (workspace && canLoadWorkspace(workspace.teamSlug, value)) {
-      return
-    }
-
-    // When the user is on a workspace on another team or the workspace is not accessible, redirect to the default workspace.
-    return navigateToWorkspace('local', 'default')
   }
 
   // ---------------------------------------------------------------------------
@@ -1120,6 +1152,7 @@ export const createAppState = async ({
       workspaceGroups,
       activeWorkspace,
       navigateToWorkspace,
+      navigateToWorkspaceGetStarted,
       isOpen: computed(() => Boolean(workspaceSlug.value && !documentSlug.value)),
       isTeamWorkspace,
     },
@@ -1134,7 +1167,6 @@ export const createAppState = async ({
       method,
       exampleName,
       teamSlug: readonly(teamSlug),
-      setTeamSlug,
     },
     environment,
     document: activeDocument,
